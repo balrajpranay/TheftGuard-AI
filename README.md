@@ -1,12 +1,57 @@
 # TheftGuard AI — Electricity Theft Detection & Investigation Platform (v1.0.0)
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![React 18](https://img.shields.io/badge/React-18.3-61DAFB?logo=react&logoColor=black)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-5.4-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-3.4-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14%2B-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+
 TheftGuard AI is an integrated platform combining machine learning screening, spot-billing electricity bill OCR analysis, and database audit persistence for electricity distribution utilities.
 
 ---
 
-## 1. System Architecture
+## 1. Executive Overview & Problem Statement
 
-The v1.0.0 architecture consists of three decoupled components:
+Non-technical losses (NTLs)—principally electricity theft, meter tampering, and billing discrepancies—cost electricity distribution utilities worldwide billions of dollars annually. Traditional field inspections rely on random audits or manual tip-offs, which are inefficient, resource-intensive, and prone to human oversight.
+
+**TheftGuard AI** addresses this challenge through a multi-tier audit workflow:
+1. **High-Throughput ML Screening:** Fast statistical and tree-based classification across batches of customer consumption metrics to identify abnormal consumption patterns.
+2. **Transparent Decision Support:** Uncalibrated model scores categorized into clear risk tiers with feature-level explainability, avoiding black-box verdicts.
+3. **Spot-Billing OCR Verification:** Client-side optical character recognition of spot bills to catch billing arithmetic discrepancies and reading falsifications before field deployment.
+4. **Audit Trail Persistence:** Relational database tracking of screening batches, individual customer records, and formal investigation tickets (`INV-YYYYMMDD-XXXX`) with 5-point physical verification checklists.
+
+---
+
+## 2. Key Technical Highlights
+
+- **Scikit-Learn ML Pipeline:** 250-tree Random Forest classifier utilizing median imputation and 13 engineered summary consumption features. Service startup enforces SHA-256 integrity verification (`442981aa7f...`).
+- **Chunked Batch Scoring:** Frontend streams rows in configurable chunks (50 rows/chunk) with live progress feedback, preventing browser freezes on large CSV uploads.
+- **Multi-Page Detail Pagination:** [`getBatchWithAllRecords`](file:///c:/Users/shush/OneDrive/Desktop/TheftGuard-AI/theftguard-ai-frontend/frontend/src/lib/dbApi.js) transparently pages through batches $> 100$ records to guarantee complete historical batch reloads without silent truncation.
+- **Client-Side Tesseract OCR:** Browser-based OCR using local `eng.traineddata` for offline spot-bill extraction. Enforces **strict data minimization**: raw OCR text, document binaries, and camera images are never transmitted or persisted.
+- **Atomic Database Operations:** SQLAlchemy transactions guarantee that batches and child records commit atomically or roll back completely on failure.
+- **Conflict & Integrity Safeguards:** Unique partial indexes prevent opening duplicate investigations for the same screening record (HTTP 409 Conflict).
+- **Graceful Offline Fallback:** If the database service is offline, the client seamlessly falls back to local in-memory session tickets (`LOCAL-XXXXXX`) so reviews and demonstrations proceed uninterrupted.
+- **Verified Test Suite:** 126 automated unit tests (86 backend tests with 84 passing and 2 live PostgreSQL tests skipped; 40 frontend tests passing 100%).
+
+---
+
+## 3. Technology Stack
+
+| Layer | Technologies | Role / Purpose |
+| :--- | :--- | :--- |
+| **Frontend** | React 18, Vite 5, Tailwind CSS, Recharts | Interactive single-page application with responsive UI, charts, and drawers |
+| **Client OCR** | Tesseract.js, offline `eng.traineddata` | Browser-based spot-bill reading extraction and discrepancy calculation |
+| **API Reverse Proxy** | Vite Server Proxy (`/ml` -> `:8000`) | Network isolation preventing browser exposure to database credentials |
+| **Backend API** | FastAPI 0.115+, Uvicorn, Starlette | High-performance asynchronous REST API with Pydantic v2 validation |
+| **ML Engine** | Scikit-learn, NumPy, Pandas, Joblib | 13-feature Random Forest pipeline and data validation boundaries |
+| **Persistence / ORM**| SQLAlchemy 2.0, Psycopg v3, PostgreSQL | Relational audit storage with Row Level Security (RLS) on all 5 tables |
+| **Testing** | Python `unittest`, Node.js native test runner | Comprehensive unit and integration test coverage across backend and frontend |
+
+---
+
+## 4. System Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -33,14 +78,9 @@ The v1.0.0 architecture consists of three decoupled components:
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Key Subsystems:
-1. **ML Screening Pipeline:** Evaluates batches of customer consumption metrics using an uncalibrated Random Forest classifier (250 trees, median imputation) trained on 13 engineered features. Verified with SHA-256 hash checking at service startup.
-2. **Bill Extraction & Verification:** Performs client-side OCR on Telangana/TSSPDCL electricity spot bills using Tesseract.js, parses consumer numbers and meter readings, and flags billing discrepancies without persisting raw OCR text or document files (strict data minimization).
-3. **Database Audit Persistence:** Manages screening batches, child records, investigation audit tickets (`INV-YYYYMMDD-XXXX`), and bill extraction metadata in PostgreSQL.
-
 ---
 
-## 2. Scientific Principles & Honesty Rules
+## 5. Scientific Principles & Honesty Rules
 
 - **Uncalibrated Model Scores:** The primary output is termed **Model Score** ($0.0$ to $1.0$). It represents the Random Forest vote fraction for class 1; it is **not** a calibrated probability of electricity theft.
 - **Label Interpretation:** Wording in the UI and API is strictly "Potentially Suspicious" and "Review Recommended". Scores reflect consumption patterns resembling dataset training labels, not confirmed theft or fraudulent tampering.
@@ -52,11 +92,29 @@ The v1.0.0 architecture consists of three decoupled components:
 
 ---
 
-## 3. Project Directory Structure
+## 6. Screenshot Gallery
+
+<!-- Replace placeholders with actual application screenshots when deploying -->
+| Dashboard Overview | ML Batch Screening |
+| :---: | :---: |
+| *[Screenshot Placeholder: Dashboard KPIs, Band Distribution & Open Tickets]* | *[Screenshot Placeholder: CSV Upload, 13-Feature Validation & Chunked Scoring]* |
+
+| Customer Detail & Risk Scale | Investigation Audit Ticket |
+| :---: | :---: |
+| *[Screenshot Placeholder: Results Drawer, Model Score Scale & CSV Export]* | *[Screenshot Placeholder: Investigation Queue, Status & 5-Point Checklist]* |
+
+| Spot-Billing OCR Extraction | Reading Discrepancy Flag |
+| :---: | :---: |
+| *[Screenshot Placeholder: Spot-Bill Upload & Reading Table Parser]* | *[Screenshot Placeholder: Arithmetic Discrepancy Alert & Ticket Creation]* |
+
+---
+
+## 7. Project Directory Structure
 
 ```
 TheftGuard-AI/
 ├── README.md                                 # Root platform documentation & restoration guide
+├── LICENSE                                   # MIT License
 ├── API_CONTRACTS.md                          # Endpoint contracts, schemas, and error codes
 ├── .gitignore                                # Global Git exclusion rules
 ├── Phase2A/                                  # Baseline HTTP verification suites & reports
@@ -106,7 +164,7 @@ TheftGuard-AI/
 
 ---
 
-## 4. Restoration & Recovery Guide (Step-by-Step)
+## 8. Restoration & Recovery Guide (Step-by-Step)
 
 Follow these steps to restore and run TheftGuard AI v1.0.0 from an unpacked source archive or Git repository.
 
@@ -221,7 +279,7 @@ Frontend runs at `http://localhost:5173`. Open your browser to begin screening.
 
 ---
 
-## 5. Troubleshooting & FAQ
+## 9. Troubleshooting & FAQ
 
 | Symptom | Root Cause | Resolution |
 | :--- | :--- | :--- |
@@ -233,7 +291,7 @@ Frontend runs at `http://localhost:5173`. Open your browser to begin screening.
 
 ---
 
-## 6. Security & Local Evaluation Boundaries
+## 10. Security & Local Evaluation Boundaries
 
 > [!WARNING]
 > **Local / Demo Evaluation Only:**
@@ -244,3 +302,11 @@ Frontend runs at `http://localhost:5173`. Open your browser to begin screening.
 2. **Reverse Proxy & TLS:** Production deployments must terminate TLS behind Nginx or an API gateway, not the Vite dev proxy.
 3. **CORS & Rate Limiting:** Enforce restrictive CORS origins and request rate limits on `/v1/predict-batch` and `/v1/batches`.
 4. **Database Connection Pooling:** Use Supabase Session Pooler (Port 5432) or PgBouncer with dedicated non-superuser credentials.
+
+---
+
+## 11. Author & Developer
+
+- **Developer:** Balraj Pranay Kumar
+- **GitHub Profile:** [https://github.com/balrajpranay](https://github.com/balrajpranay)
+- **Repository:** [https://github.com/balrajpranay/TheftGuard-AI](https://github.com/balrajpranay/TheftGuard-AI)
