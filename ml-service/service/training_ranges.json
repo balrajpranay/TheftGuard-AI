@@ -1,0 +1,76 @@
+{
+  "generated_utc": "2026-10-17T19:10:05.297467+00:00",
+  "source_table": {
+    "file": "customer_features_for_review.csv",
+    "sha256": "2344186ff500132a3684745b7b96ca266235bc1aa7865401fa96ea370205395a",
+    "rows": 42372
+  },
+  "scope_note": "Per-feature minimum and maximum of the project's feature table (development and test splits together). Used only for warning W1. Aggregate values; no rows are stored.",
+  "features": {
+    "valid_readings": {
+      "min": 0.0,
+      "max": 1033.0,
+      "null_rows": 0
+    },
+    "missing_percent": {
+      "min": 0.097,
+      "max": 100.0,
+      "null_rows": 0
+    },
+    "zero_count": {
+      "min": 0.0,
+      "max": 1033.0,
+      "null_rows": 0
+    },
+    "zero_percent_of_observed": {
+      "min": 0.0,
+      "max": 100.0,
+      "null_rows": 5
+    },
+    "mean_observed": {
+      "min": 0.0,
+      "max": 13601.1,
+      "null_rows": 5
+    },
+    "median_observed": {
+      "min": 0.0,
+      "max": 14880.0,
+      "null_rows": 5
+    },
+    "std_observed": {
+      "min": 0.0,
+      "max": 27954.24710586666,
+      "null_rows": 5
+    },
+    "min_observed": {
+      "min": 0.0,
+      "max": 3234.0,
+      "null_rows": 5
+    },
+    "max_observed": {
+      "min": 0.0,
+      "max": 800003.32,
+      "null_rows": 5
+    },
+    "mean_positive": {
+      "min": 0.009999999999999998,
+      "max": 640000.0,
+      "null_rows": 2114
+    },
+    "median_positive": {
+      "min": 0.01,
+      "max": 640000.0,
+      "null_rows": 2114
+    },
+    "positive_readings": {
+      "min": 0.0,
+      "max": 1033.0,
+      "null_rows": 0
+    },
+    "positive_percent_of_all_dates": {
+      "min": 0.0,
+      "max": 99.903,
+      "null_rows": 0
+    }
+  }
+}

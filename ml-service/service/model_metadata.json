@@ -1,0 +1,88 @@
+{
+  "generated_utc": "2026-10-17T19:10:05.297467+00:00",
+  "model": {
+    "name": "validated_candidate_pipeline",
+    "type": "scikit-learn Pipeline: median SimpleImputer with missing-value indicators, then RandomForestClassifier (250 trees)",
+    "expected_sha256": "442981aa7f24885d89363bfd6bc9123c2d05dbc13c59e58644d82e6773a5a2a5",
+    "features": [
+      "valid_readings",
+      "missing_percent",
+      "zero_count",
+      "zero_percent_of_observed",
+      "mean_observed",
+      "median_observed",
+      "std_observed",
+      "min_observed",
+      "max_observed",
+      "mean_positive",
+      "median_positive",
+      "positive_readings",
+      "positive_percent_of_all_dates"
+    ],
+    "model_inputs": 21
+  },
+  "labels": {
+    "1": "Potentially Suspicious",
+    "0": "No Suspicious Pattern Flagged"
+  },
+  "score": {
+    "name": "model_score",
+    "note": "Random Forest vote fraction for class 1. It is uncalibrated and is not a probability.",
+    "default_threshold": 0.5
+  },
+  "evaluation": {
+    "source": "final_test_metrics.json, reproduced by the Phase 1 verification harness (checks V07 and V09)",
+    "selected_model": "Random Forest balanced",
+    "metrics": {
+      "final_test_accuracy": 0.8704424778761062,
+      "final_test_balanced_accuracy": 0.6413574438292461,
+      "final_test_precision_FLAG_1": 0.292358803986711,
+      "final_test_recall_FLAG_1": 0.3651452282157676,
+      "final_test_f1_FLAG_1": 0.3247232472324723,
+      "final_test_roc_auc": 0.7406699667564486,
+      "final_test_average_precision_PR_AUC": 0.2742110006899252,
+      "final_test_rows": 8475
+    },
+    "confusion_matrix": {
+      "TN": 7113,
+      "FP": 639,
+      "FN": 459,
+      "TP": 264
+    },
+    "development_cv_mean_f1": [
+      {
+        "model": "Random Forest balanced",
+        "mean_f1": 0.3165491201902551
+      },
+      {
+        "model": "Logistic Regression balanced",
+        "mean_f1": 0.2486815431861136
+      },
+      {
+        "model": "Random Forest baseline",
+        "mean_f1": 0.1094785287400929
+      },
+      {
+        "model": "Logistic Regression baseline",
+        "mean_f1": 0.0671153663458303
+      }
+    ],
+    "evaluation_caveat": "This uses a new random split after earlier experiments; prior results influenced candidate selection, so it is not a pristine preregistered evaluation. Treat as a stronger follow-up, not external validation.",
+    "data_caveat": "Verify dataset provenance, label meaning, license, and consumption units. Features are customer-level summaries, not a previous-versus-current consumption comparison.",
+    "interpretation_warning": "FLAG is a dataset label, not proof of confirmed theft."
+  },
+  "input_assumptions": {
+    "window_dates": 1034,
+    "window_status": "inferred from the feature formulas; not confirmed"
+  },
+  "limitations": [
+    "A positive prediction is a pattern similar to records labelled FLAG = 1. It is not proof of electricity theft.",
+    "Results come from one random split and are not external validation.",
+    "Precision and recall are modest; most flagged customers carry FLAG = 0 and most FLAG = 1 customers are not flagged at the default threshold.",
+    "The score is uncalibrated and is not a probability.",
+    "Dataset source, licence, FLAG meaning and consumption units are unconfirmed.",
+    "The seven raw-derived features are unverified against raw readings.",
+    "The model uses whole-period summaries and cannot compare previous and current consumption.",
+    "Decision Tree and SVM were not evaluated."
+  ]
+}

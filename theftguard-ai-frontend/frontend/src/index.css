@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  body { @apply bg-white font-sans text-ink antialiased; font-variant-numeric: tabular-nums; }
+  h1, h2, h3 { @apply font-display; }
+  :focus-visible { outline: 3px solid #0F0F0F; outline-offset: 2px; }
+  .on-dark :focus-visible { outline-color: #F4C430; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+  }
+}
+
+@media print {
+  body { background: #fff; }
+  .print-sheet { border: 0 !important; }
+}

@@ -1,0 +1,11 @@
+# TheftGuard AI — ML Service & Database Dependencies
+fastapi>=0.115,<1.0
+uvicorn[standard]>=0.30,<1.0
+pandas>=2.2,<4.0
+scikit-learn>=1.5,<2.0
+joblib>=1.4,<2.0
+python-dotenv>=1.0,<2.0
+
+# Database integration (Phase 1)
+sqlalchemy>=2.0,<3.0
+psycopg[binary]>=3.1,<4.0

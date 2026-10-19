@@ -1,0 +1,626 @@
+{
+  "run_started_utc": "2026-10-17T14:50:33.951876+00:00",
+  "run_finished_utc": "2026-10-17T14:51:00.191018+00:00",
+  "service_under_test": "http://127.0.0.1:8765",
+  "environment_of_this_run": {
+    "python": "3.13.16",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "pandas": "3.0.6",
+    "numpy": "2.5.4",
+    "scikit-learn": "1.9.1"
+  },
+  "sample_error": null,
+  "summary": {
+    "PASS": 10,
+    "FAIL": 0,
+    "OBSERVED": 25,
+    "NOT_PERFORMED": 0
+  },
+  "results": [
+    {
+      "id": "A01",
+      "title": "GET / returns the banner and status 'ready'",
+      "status": "PASS",
+      "detail": "HTTP 200; keys ['docs', 'service', 'status', 'warning']; status='ready'.",
+      "evidence": {
+        "body": {
+          "service": "TheftGuard AI ML API",
+          "status": "ready",
+          "docs": "/docs",
+          "warning": "Predictions indicate similarity to dataset labels; they do not prove theft."
+        }
+      }
+    },
+    {
+      "id": "A02",
+      "title": "GET /health returns ok with the documented keys",
+      "status": "PASS",
+      "detail": "HTTP 200; status='ok'; model_loaded=True.",
+      "evidence": {
+        "keys": [
+          "error",
+          "model_loaded",
+          "model_path",
+          "status"
+        ]
+      }
+    },
+    {
+      "id": "A02b",
+      "title": "GET /health discloses the model file location (gap G9)",
+      "status": "OBSERVED",
+      "detail": "model_path is returned; absolute path: False.",
+      "evidence": {
+        "model_path_value": "validated_candidate_pipeline.joblib"
+      }
+    },
+    {
+      "id": "A03",
+      "title": "GET /features lists the 13 names in model order",
+      "status": "PASS",
+      "detail": "HTTP 200; names equal expected list and order: True.",
+      "evidence": {}
+    },
+    {
+      "id": "A04",
+      "title": "POST /predict returns the documented response shape",
+      "status": "PASS",
+      "detail": "HTTP 200; keys ['interpretation', 'predicted_label', 'predicted_label_name', 'probability_flag_1'].",
+      "evidence": {
+        "body": {
+          "predicted_label": 0,
+          "predicted_label_name": "No Suspicious Pattern Flagged",
+          "probability_flag_1": 0.13196218623813116,
+          "interpretation": "This is a model prediction of the source dataset's FLAG label, not confirmation of electricity theft. A qualified utility investigation and verified local data are required."
+        },
+        "content_type": "application/json"
+      }
+    },
+    {
+      "id": "A05",
+      "title": "Missing feature returns 422 with a 'missing' list",
+      "status": "PASS",
+      "detail": "HTTP 422; detail type dict.",
+      "evidence": {
+        "detail": {
+          "message": "Missing required features",
+          "missing": [
+            "valid_readings"
+          ]
+        }
+      }
+    },
+    {
+      "id": "A06",
+      "title": "An identifier-like extra key is rejected with 422 'unexpected'",
+      "status": "PASS",
+      "detail": "HTTP 422; detail type dict.",
+      "evidence": {
+        "detail": {
+          "message": "Unexpected features supplied",
+          "unexpected": [
+            "CONS_NO"
+          ]
+        }
+      }
+    },
+    {
+      "id": "A07",
+      "title": "Saved held-out predictions reproduced over HTTP",
+      "status": "PASS",
+      "detail": "225 rows sent (38 with null values); non-200: 0; label mismatches: 0; largest score difference: 2.22e-16 (tolerance 1e-9).",
+      "evidence": {
+        "rows": 225,
+        "rows_with_nulls": 38,
+        "full_test_set": false
+      }
+    },
+    {
+      "id": "B01",
+      "title": "Malformed JSON body",
+      "status": "OBSERVED",
+      "detail": "HTTP 422.",
+      "evidence": {
+        "status": 422,
+        "content_type": "application/json",
+        "json_top_level_keys": [
+          "detail"
+        ],
+        "body_start": "{\"detail\":[{\"type\":\"json_invalid\",\"loc\":[\"body\",14],\"msg\":\"JSON decode error\",\"input\":{},\"ctx\":{\"error\":\"Expecting property name enclosed in double quotes\"}}]}",
+        "leak_indicators": {
+          "traceback": false,
+          "windows_or_unix_path": false,
+          "mentions_joblib": false,
+          "exception_class_name": false
+        }
+      }
+    },
+    {
+      "id": "B02",
+      "title": "Empty body",
+      "status": "OBSERVED",
+      "detail": "HTTP 422.",
+      "evidence": {
+        "status": 422,
+        "content_type": "application/json",
+        "json_top_level_keys": [
+          "detail"
+        ],
+        "body_start": "{\"detail\":[{\"type\":\"missing\",\"loc\":[\"body\"],\"msg\":\"Field required\",\"input\":null}]}",
+        "leak_indicators": {
+          "traceback": false,
+          "windows_or_unix_path": false,
+          "mentions_joblib": false,
+          "exception_class_name": false
+        }
+      }
+    },
+    {
+      "id": "B03",
+      "title": "Body without a 'features' key",
+      "status": "OBSERVED",
+      "detail": "HTTP 422.",
+      "evidence": {
+        "status": 422,
+        "content_type": "application/json",
+        "json_top_level_keys": [
+          "detail"
+        ],
+        "body_start": "{\"detail\":[{\"type\":\"missing\",\"loc\":[\"body\",\"features\"],\"msg\":\"Field required\",\"input\":{}}]}",
+        "leak_indicators": {
+          "traceback": false,
+          "windows_or_unix_path": false,
+          "mentions_joblib": false,
+          "exception_class_name": false
+        }
+      }
+    },
+    {
+      "id": "B04",
+      "title": "'features' is a list",
+      "status": "OBSERVED",
+      "detail": "HTTP 422.",
+      "evidence": {
+        "status": 422,
+        "content_type": "application/json",
+        "json_top_level_keys": [
+          "detail"
+        ],
+        "body_start": "{\"detail\":[{\"type\":\"dict_type\",\"loc\":[\"body\",\"features\"],\"msg\":\"Input should be a valid dictionary\",\"input\":[1,2,3]}]}",
+        "leak_indicators": {
+          "traceback": false,
+          "windows_or_unix_path": false,
+          "mentions_joblib": false,
+          "exception_class_name": false
+        }
+      }
+    },
+    {
+      "id": "B05",
+      "title": "'features' is null",
+      "status": "OBSERVED",
+      "detail": "HTTP 422.",
+      "evidence": {
+        "status": 422,
+        "content_type": "application/json",
+        "json_top_level_keys": [
+          "detail"
+        ],
+        "body_start": "{\"detail\":[{\"type\":\"dict_type\",\"loc\":[\"body\",\"features\"],\"msg\":\"Input should be a valid dictionary\",\"input\":null}]}",
+        "leak_indicators": {
+          "traceback": false,
+          "windows_or_unix_path": false,
+          "mentions_joblib": false,
+          "exception_class_name": false
+        }
+      }
+    },
+    {
+      "id": "B06",
+      "title": "Valid JSON sent as text/plain",
+      "status": "OBSERVED",
+      "detail": "HTTP 422.",
+      "evidence": {
+        "status": 422,
+        "content_type": "application/json",
+        "json_top_level_keys": [
+          "detail"
+        ],
+        "body_start": "{\"detail\":[{\"type\":\"model_attributes_type\",\"loc\":[\"body\"],\"msg\":\"Input should be a valid dictionary or object to extract fields from\",\"input\":\"{\\\"features\\\": {\\\"valid_readings\\\": 923.0, \\\"missing_percent\\\": 10.735, \\\"zero_count\\\": 0.0, \\\"zero_percent_of_observed\\\": 0.0, \\\"mean_observed\\\": 7.00180931...[truncated]",
+        "leak_indicators": {
+          "traceback": false,
+          "windows_or_unix_path": false,
+          "mentions_joblib": false,
+          "exception_class_name": false
+        }
+      }
+    },
+    {
+      "id": "B07",
+      "title": "GET /predict (wrong method)",
+      "status": "OBSERVED",
+      "detail": "HTTP 405.",
+      "evidence": {
+        "status": 405,
+        "content_type": "application/json",
+        "json_top_level_keys": [
+          "detail"
+        ],
+        "body_start": "{\"detail\":\"Method Not Allowed\"}",
+        "leak_indicators": {
+          "traceback": false,
+          "windows_or_unix_path": false,
+          "mentions_joblib": false,
+          "exception_class_name": false
+        }
+      }
+    },
+    {
+      "id": "B08",
+      "title": "POST /health (wrong method)",
+      "status": "OBSERVED",
+      "detail": "HTTP 405.",
+      "evidence": {
+        "status": 405,
+        "content_type": "application/json",
+        "json_top_level_keys": [
+          "detail"
+        ],
+        "body_start": "{\"detail\":\"Method Not Allowed\"}",
+        "leak_indicators": {
+          "traceback": false,
+          "windows_or_unix_path": false,
+          "mentions_joblib": false,
+          "exception_class_name": false
+        }
+      }
+    },
+    {
+      "id": "B09",
+      "title": "Unknown path",
+      "status": "OBSERVED",
+      "detail": "HTTP 404.",
+      "evidence": {
+        "status": 404,
+        "content_type": "application/json",
+        "json_top_level_keys": [
+          "detail"
+        ],
+        "body_start": "{\"detail\":\"Not Found\"}",
+        "leak_indicators": {
+          "traceback": false,
+          "windows_or_unix_path": false,
+          "mentions_joblib": false,
+          "exception_class_name": false
+        }
+      }
+    },
+    {
+      "id": "B10",
+      "title": "GET /openapi.json (interactive docs are enabled by default)",
+      "status": "OBSERVED",
+      "detail": "HTTP 200.",
+      "evidence": {
+        "status": 200,
+        "content_type": "application/json",
+        "json_top_level_keys": [
+          "components",
+          "info",
+          "openapi",
+          "paths"
+        ],
+        "body_start": "{\"openapi\":\"3.1.0\",\"info\":{\"title\":\"TheftGuard AI ML API\",\"description\":\"Inference API for the TheftGuard AI experimental ML pipeline. A positive prediction is a dataset-label prediction, not proof of electricity theft.\",\"version\":\"0.1.0\"},\"paths\":{\"/\":{\"get\":{\"summary\":\"Root\",\"operationId\":\"root__g...[truncated]",
+        "leak_indicators": {
+          "traceback": false,
+          "windows_or_unix_path": false,
+          "mentions_joblib": false,
+          "exception_class_name": true
+        }
+      }
+    },
+    {
+      "id": "B11",
+      "title": "About 2 MB request body with one extra key (no size limit expected; gap G2)",
+      "status": "OBSERVED",
+      "detail": "HTTP 422.",
+      "evidence": {
+        "status": 422,
+        "content_type": "application/json",
+        "json_top_level_keys": [
+          "detail"
+        ],
+        "body_start": "{\"detail\":[{\"type\":\"missing\",\"loc\":[\"body\",\"features\"],\"msg\":\"Field required\",\"input\":{\"valid_readings\":923.0,\"missing_percent\":10.735,\"zero_count\":0.0,\"zero_percent_of_observed\":0.0,\"mean_observed\":7.00180931744312,\"median_observed\":6.74,\"std_observed\":1.8300765362300369,\"min_observed\":1.3,\"max_obs...[truncated]",
+        "leak_indicators": {
+          "traceback": false,
+          "windows_or_unix_path": false,
+          "mentions_joblib": false,
+          "exception_class_name": false
+        },
+        "elapsed_ms": 32.1
+      }
+    },
+    {
+      "id": "B12",
+      "title": "Cross-origin requests (no CORS configuration expected; gap G2)",
+      "status": "OBSERVED",
+      "detail": "Preflight HTTP 405; Access-Control-Allow-Origin on preflight: False; on GET: False.",
+      "evidence": {
+        "preflight_status": 405,
+        "server_header": "uvicorn"
+      }
+    },
+    {
+      "id": "C01",
+      "title": "Negative valid_readings",
+      "status": "OBSERVED",
+      "detail": "HTTP 200.",
+      "evidence": {
+        "status": 200,
+        "content_type": "application/json",
+        "json_top_level_keys": [
+          "interpretation",
+          "predicted_label",
+          "predicted_label_name",
+          "probability_flag_1"
+        ],
+        "body_start": "{\"predicted_label\":0,\"predicted_label_name\":\"No Suspicious Pattern Flagged\",\"probability_flag_1\":0.18319913030287513,\"interpretation\":\"This is a model prediction of the source dataset's FLAG label, not confirmation of electricity theft. A qualified utility investigation and verified local data are r...[truncated]",
+        "leak_indicators": {
+          "traceback": false,
+          "windows_or_unix_path": false,
+          "mentions_joblib": false,
+          "exception_class_name": false
+        }
+      }
+    },
+    {
+      "id": "C02",
+      "title": "missing_percent = 500",
+      "status": "OBSERVED",
+      "detail": "HTTP 200.",
+      "evidence": {
+        "status": 200,
+        "content_type": "application/json",
+        "json_top_level_keys": [
+          "interpretation",
+          "predicted_label",
+          "predicted_label_name",
+          "probability_flag_1"
+        ],
+        "body_start": "{\"predicted_label\":0,\"predicted_label_name\":\"No Suspicious Pattern Flagged\",\"probability_flag_1\":0.17635525613120098,\"interpretation\":\"This is a model prediction of the source dataset's FLAG label, not confirmation of electricity theft. A qualified utility investigation and verified local data are r...[truncated]",
+        "leak_indicators": {
+          "traceback": false,
+          "windows_or_unix_path": false,
+          "mentions_joblib": false,
+          "exception_class_name": false
+        }
+      }
+    },
+    {
+      "id": "C03",
+      "title": "null mean_observed",
+      "status": "OBSERVED",
+      "detail": "HTTP 200.",
+      "evidence": {
+        "status": 200,
+        "content_type": "application/json",
+        "json_top_level_keys": [
+          "interpretation",
+          "predicted_label",
+          "predicted_label_name",
+          "probability_flag_1"
+        ],
+        "body_start": "{\"predicted_label\":0,\"predicted_label_name\":\"No Suspicious Pattern Flagged\",\"probability_flag_1\":0.1286580376089825,\"interpretation\":\"This is a model prediction of the source dataset's FLAG label, not confirmation of electricity theft. A qualified utility investigation and verified local data are re...[truncated]",
+        "leak_indicators": {
+          "traceback": false,
+          "windows_or_unix_path": false,
+          "mentions_joblib": false,
+          "exception_class_name": false
+        }
+      }
+    },
+    {
+      "id": "C04",
+      "title": "String mean_observed",
+      "status": "OBSERVED",
+      "detail": "HTTP 500.",
+      "evidence": {
+        "status": 500,
+        "content_type": "application/json",
+        "json_top_level_keys": [
+          "detail"
+        ],
+        "body_start": "{\"detail\":\"Prediction failed: ValueError: Cannot use median strategy with non-numeric data:\\ncould not convert string to float: 'abc'\"}",
+        "leak_indicators": {
+          "traceback": false,
+          "windows_or_unix_path": true,
+          "mentions_joblib": false,
+          "exception_class_name": true
+        }
+      }
+    },
+    {
+      "id": "C05",
+      "title": "Infinity std_observed (JSON token Infinity)",
+      "status": "OBSERVED",
+      "detail": "HTTP 500.",
+      "evidence": {
+        "status": 500,
+        "content_type": "application/json",
+        "json_top_level_keys": [
+          "detail"
+        ],
+        "body_start": "{\"detail\":\"Prediction failed: ValueError: Input X contains infinity or a value too large for dtype('float64').\"}",
+        "leak_indicators": {
+          "traceback": false,
+          "windows_or_unix_path": false,
+          "mentions_joblib": false,
+          "exception_class_name": true
+        }
+      }
+    },
+    {
+      "id": "C06",
+      "title": "NaN mean_observed (JSON token NaN)",
+      "status": "OBSERVED",
+      "detail": "HTTP 200.",
+      "evidence": {
+        "status": 200,
+        "content_type": "application/json",
+        "json_top_level_keys": [
+          "interpretation",
+          "predicted_label",
+          "predicted_label_name",
+          "probability_flag_1"
+        ],
+        "body_start": "{\"predicted_label\":0,\"predicted_label_name\":\"No Suspicious Pattern Flagged\",\"probability_flag_1\":0.1286580376089825,\"interpretation\":\"This is a model prediction of the source dataset's FLAG label, not confirmation of electricity theft. A qualified utility investigation and verified local data are re...[truncated]",
+        "leak_indicators": {
+          "traceback": false,
+          "windows_or_unix_path": false,
+          "mentions_joblib": false,
+          "exception_class_name": false
+        }
+      }
+    },
+    {
+      "id": "C07",
+      "title": "Boolean zero_count",
+      "status": "OBSERVED",
+      "detail": "HTTP 200.",
+      "evidence": {
+        "status": 200,
+        "content_type": "application/json",
+        "json_top_level_keys": [
+          "interpretation",
+          "predicted_label",
+          "predicted_label_name",
+          "probability_flag_1"
+        ],
+        "body_start": "{\"predicted_label\":0,\"predicted_label_name\":\"No Suspicious Pattern Flagged\",\"probability_flag_1\":0.1318132684892134,\"interpretation\":\"This is a model prediction of the source dataset's FLAG label, not confirmation of electricity theft. A qualified utility investigation and verified local data are re...[truncated]",
+        "leak_indicators": {
+          "traceback": false,
+          "windows_or_unix_path": false,
+          "mentions_joblib": false,
+          "exception_class_name": false
+        }
+      }
+    },
+    {
+      "id": "C08",
+      "title": "Numeric string zero_count '5'",
+      "status": "OBSERVED",
+      "detail": "HTTP 200.",
+      "evidence": {
+        "status": 200,
+        "content_type": "application/json",
+        "json_top_level_keys": [
+          "interpretation",
+          "predicted_label",
+          "predicted_label_name",
+          "probability_flag_1"
+        ],
+        "body_start": "{\"predicted_label\":0,\"predicted_label_name\":\"No Suspicious Pattern Flagged\",\"probability_flag_1\":0.14134227281821773,\"interpretation\":\"This is a model prediction of the source dataset's FLAG label, not confirmation of electricity theft. A qualified utility investigation and verified local data are r...[truncated]",
+        "leak_indicators": {
+          "traceback": false,
+          "windows_or_unix_path": false,
+          "mentions_joblib": false,
+          "exception_class_name": false
+        }
+      }
+    },
+    {
+      "id": "C09",
+      "title": "Huge magnitude 1e308 in max_observed",
+      "status": "OBSERVED",
+      "detail": "HTTP 500.",
+      "evidence": {
+        "status": 500,
+        "content_type": "application/json",
+        "json_top_level_keys": [
+          "detail"
+        ],
+        "body_start": "{\"detail\":\"Prediction failed: ValueError: Input X contains infinity or a value too large for dtype('float32').\"}",
+        "leak_indicators": {
+          "traceback": false,
+          "windows_or_unix_path": false,
+          "mentions_joblib": false,
+          "exception_class_name": true
+        }
+      }
+    },
+    {
+      "id": "C10",
+      "title": "All 13 values null",
+      "status": "OBSERVED",
+      "detail": "HTTP 200.",
+      "evidence": {
+        "status": 200,
+        "content_type": "application/json",
+        "json_top_level_keys": [
+          "interpretation",
+          "predicted_label",
+          "predicted_label_name",
+          "probability_flag_1"
+        ],
+        "body_start": "{\"predicted_label\":0,\"predicted_label_name\":\"No Suspicious Pattern Flagged\",\"probability_flag_1\":0.28693423483623065,\"interpretation\":\"This is a model prediction of the source dataset's FLAG label, not confirmation of electricity theft. A qualified utility investigation and verified local data are r...[truncated]",
+        "leak_indicators": {
+          "traceback": false,
+          "windows_or_unix_path": false,
+          "mentions_joblib": false,
+          "exception_class_name": false
+        }
+      }
+    },
+    {
+      "id": "D01",
+      "title": "20 sequential GET /health requests",
+      "status": "OBSERVED",
+      "detail": "median 1.1 ms; max 1.3 ms.",
+      "evidence": {
+        "unit": "milliseconds"
+      }
+    },
+    {
+      "id": "D02",
+      "title": "5 parallel clients, 4 predictions each",
+      "status": "OBSERVED",
+      "detail": "20 requests; statuses [200]; median 464.3 ms; max 515.5 ms.",
+      "evidence": {
+        "unit": "milliseconds"
+      }
+    },
+    {
+      "id": "I01",
+      "title": "Inputs, including the model and app.py, were not modified during the run",
+      "status": "PASS",
+      "detail": "SHA-256 of every watched file is identical before and after the run.",
+      "evidence": {
+        "sha256": {
+          "model": "442981aa7f24885d89363bfd6bc9123c2d05dbc13c59e58644d82e6773a5a2a5",
+          "app_path": "3c4b23c55d07196bf4625d67d27d04356dfc82d85e90b2a6a1a15e7337d70035",
+          "features_csv": "2344186ff500132a3684745b7b96ca266235bc1aa7865401fa96ea370205395a",
+          "predictions": "ba97db39972059f8b551d6df2f10c86791067387ad302abdb62988e7f8f2ff39"
+        }
+      }
+    },
+    {
+      "id": "I02",
+      "title": "The service folder gained or changed no files during the run",
+      "status": "PASS",
+      "detail": "No file in the service folder (excluding .venv and .git) was added, removed or changed between the start and end of this run.",
+      "evidence": {
+        "changed_paths": []
+      }
+    },
+    {
+      "id": "S01",
+      "title": "Service source and model are the ones recorded in Phase 1",
+      "status": "PASS",
+      "detail": "app.py hash matches: True; model hash matches: True.",
+      "evidence": {
+        "app_sha256": "3c4b23c55d07196bf4625d67d27d04356dfc82d85e90b2a6a1a15e7337d70035",
+        "model_sha256": "442981aa7f24885d89363bfd6bc9123c2d05dbc13c59e58644d82e6773a5a2a5"
+      }
+    }
+  ],
+  "scope_note": "Phase 2a baseline of the unchanged service over real HTTP. It describes this run on this machine only and tests no new code."
+}

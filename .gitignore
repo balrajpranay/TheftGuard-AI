@@ -1,0 +1,34 @@
+# Secrets and environment variables
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+ENV/
+
+# Node / Frontend
+node_modules/
+dist/
+
+# Large model artifacts and archives
+*.joblib
+*.zip
+
+# Datasets and training archives
+TheftGuard AI datasets/
+
+# Logs and local databases
+*.log
+*.sqlite
+*.sqlite3
+
+# Test caches and coverage
+.pytest_cache/
+.coverage
+htmlcov/

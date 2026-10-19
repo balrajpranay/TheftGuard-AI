@@ -1,0 +1,26 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.env/
+.venv/
+env/
+venv/
+ENV/
+
+# Environment variables & secrets (NEVER commit secrets!)
+.env
+.env.*
+!.env.example
+
+# Logs and SQLite
+*.log
+*.sqlite
+*.sqlite3
+
+# Test results / reports
+.pytest_cache/
+.coverage
+htmlcov/

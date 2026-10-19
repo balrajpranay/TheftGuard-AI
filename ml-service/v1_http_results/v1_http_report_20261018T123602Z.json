@@ -1,0 +1,143 @@
+{
+  "run_started_utc": "2026-10-18T12:36:02.368180+00:00",
+  "run_finished_utc": "2026-10-18T12:36:25.125646+00:00",
+  "environment_of_this_run": {
+    "python": "3.13.16",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "fastapi": "0.143.3",
+    "pydantic": "2.14.1",
+    "uvicorn": "0.54.0",
+    "sklearn": "1.9.1",
+    "pandas": "3.0.6",
+    "numpy": "2.5.4"
+  },
+  "server_command": "python -m uvicorn service.main:app",
+  "summary": {
+    "PASS": 13,
+    "FAIL": 0,
+    "OBSERVED": 3,
+    "NOT_PERFORMED": 0
+  },
+  "results": [
+    {
+      "id": "F01",
+      "title": "A wrong model hash refuses to serve (503, no details)",
+      "status": "PASS",
+      "detail": "/v1/health HTTP 503, /v1/predict HTTP 503; codes ['model_unavailable', 'model_unavailable'].",
+      "evidence": {}
+    },
+    {
+      "id": "F02",
+      "title": "A missing model file refuses to serve (503, no details)",
+      "status": "PASS",
+      "detail": "/v1/health HTTP 503, /v1/predict HTTP 503; codes ['model_unavailable', 'model_unavailable'].",
+      "evidence": {}
+    },
+    {
+      "id": "H01",
+      "title": "GET /v1/health returns ok and exposes no path",
+      "status": "PASS",
+      "detail": "HTTP 200; body {'status': 'ok', 'model_loaded': True, 'model_sha256_verified': True}.",
+      "evidence": {}
+    },
+    {
+      "id": "H02",
+      "title": "GET /v1/model-metadata returns the verified model facts and limitations",
+      "status": "PASS",
+      "detail": "HTTP 200; sha256 matches: True.",
+      "evidence": {}
+    },
+    {
+      "id": "H03",
+      "title": "Saved predictions reproduced by POST /v1/predict",
+      "status": "PASS",
+      "detail": "225 rows; non-200: 0; label mismatches: 0; largest score difference: 2.22e-16.",
+      "evidence": {}
+    },
+    {
+      "id": "H04",
+      "title": "Saved predictions reproduced by POST /v1/predict-batch",
+      "status": "PASS",
+      "detail": "225 rows scored; failed requests: 0; label mismatches: 0; largest score difference: 2.22e-16.",
+      "evidence": {}
+    },
+    {
+      "id": "H04b",
+      "title": "Batch throughput (informational)",
+      "status": "OBSERVED",
+      "detail": "225 rows in 0.10s of request time (2209 rows per second).",
+      "evidence": {}
+    },
+    {
+      "id": "H05",
+      "title": "A mixed batch returns partial results in order",
+      "status": "PASS",
+      "detail": "HTTP 200; ok flags [True, False, True, False, False].",
+      "evidence": {}
+    },
+    {
+      "id": "H06",
+      "title": "Every legacy-gap input is now rejected with 422 and the expected code (no 500s, no leaks)",
+      "status": "PASS",
+      "detail": "15 cases; failures: [].",
+      "evidence": {}
+    },
+    {
+      "id": "H07",
+      "title": "Malformed and mis-shaped bodies return 422 with a standard error and no leaks",
+      "status": "PASS",
+      "detail": "7 cases; failures: [].",
+      "evidence": {}
+    },
+    {
+      "id": "H07b",
+      "title": "Valid JSON sent as text/plain (observation)",
+      "status": "OBSERVED",
+      "detail": "HTTP 200.",
+      "evidence": {}
+    },
+    {
+      "id": "H08",
+      "title": "Wrong methods and unknown paths use the standard error; interactive docs are off",
+      "status": "PASS",
+      "detail": "Statuses: {'GET /v1/predict': 405, 'POST /v1/health': 405, 'unknown path': 404, '/docs': 404, '/openapi.json': 404, 'legacy /predict absent': 404}.",
+      "evidence": {}
+    },
+    {
+      "id": "H09",
+      "title": "Batch size limits and the request-size limit are enforced",
+      "status": "PASS",
+      "detail": "5001 rows: HTTP 422; empty rows: HTTP 422; 1.5 MB body (limit 1 MB in this test): HTTP 413.",
+      "evidence": {}
+    },
+    {
+      "id": "H10",
+      "title": "A value outside the dataset range is scored with warning W1, not rejected",
+      "status": "PASS",
+      "detail": "HTTP 200; warnings ['outside_dataset_range'].",
+      "evidence": {}
+    },
+    {
+      "id": "H11",
+      "title": "5 parallel clients x 3 batches of 50 rows (informational)",
+      "status": "OBSERVED",
+      "detail": "statuses [200]; median 226 ms; max 258 ms.",
+      "evidence": {}
+    },
+    {
+      "id": "I01",
+      "title": "The model, app.py and both data files were not modified during the run",
+      "status": "PASS",
+      "detail": "SHA-256 of every watched file is identical before and after.",
+      "evidence": {
+        "sha256": {
+          "model": "442981aa7f24885d89363bfd6bc9123c2d05dbc13c59e58644d82e6773a5a2a5",
+          "app_path": "3c4b23c55d07196bf4625d67d27d04356dfc82d85e90b2a6a1a15e7337d70035",
+          "features_csv": "2344186ff500132a3684745b7b96ca266235bc1aa7865401fa96ea370205395a",
+          "predictions": "ba97db39972059f8b551d6df2f10c86791067387ad302abdb62988e7f8f2ff39"
+        }
+      }
+    }
+  ],
+  "scope_note": "Real-HTTP test of the new /v1 service on this machine only."
+}
