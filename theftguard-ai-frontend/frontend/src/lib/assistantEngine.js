@@ -13,6 +13,12 @@
 import { sendAssistantChat } from './assistantApi.js'
 import { inr, kwh, pct } from './format.js'
 import { synthesizeAnalysis } from './householdQuestionnaire.js'
+import {
+  buildReportingOverview,
+  buildRequiredInformationChecklist,
+  buildComplaintLifecycleExplanation,
+  buildDraftComplaint,
+} from './electricityReportingGuidance.js'
 
 export const DEFAULT_SUGGESTIONS = [
   'Why is my electricity bill so high this month?',
@@ -598,7 +604,7 @@ export function generateClientRuleResponse(
     // 4. Onboarding Next Steps
     if (
       lowerMsg.includes('next') ||
-      lowerMsg.includes('తర్వాత') ||
+      (lowerMsg.includes('తర్వాత') && !lowerMsg.includes('ఫిర్యాదు')) ||
       lowerMsg.includes('ఏం చేయాలి') ||
       lowerMsg.includes('సలహా')
     ) {
@@ -644,6 +650,80 @@ export function generateClientRuleResponse(
           'ఈ నెల నా బిల్లు ఎందుకు పెరిగింది?',
           'టారిఫ్ స్లాబ్‌లు ఎలా పనిచేస్తాయి?',
         ],
+        disclaimers,
+      }
+    }
+
+    // 5A. Telugu: Complaint drafting
+    if (
+      lowerMsg.includes('ఫిర్యాదు') &&
+      (lowerMsg.includes('రాయ') ||
+        lowerMsg.includes('డ్రాఫ్ట్') ||
+        lowerMsg.includes('లేఖ') ||
+        lowerMsg.includes('నమూనా') ||
+        lowerMsg.includes('సహాయం'))
+    ) {
+      const draft = buildDraftComplaint({ billContext, location: lowerMsg, language: 'te' })
+      return {
+        reply: draft.reply,
+        provider: 'local_rule_engine',
+        structured_analysis: analysis,
+        suggestions: draft.suggestions,
+        disclaimers,
+      }
+    }
+
+    // 5B. Telugu: Information & Documents checklist
+    if (
+      lowerMsg.includes('పత్రాలు') ||
+      lowerMsg.includes('సమాచారం సిద్ధం') ||
+      lowerMsg.includes('డాక్యుమెంట్లు') ||
+      (lowerMsg.includes('ఫిర్యాదు') && lowerMsg.includes('ఏమి కావాలి'))
+    ) {
+      const checklist = buildRequiredInformationChecklist({ billContext, language: 'te' })
+      return {
+        reply: checklist.reply,
+        provider: 'local_rule_engine',
+        structured_analysis: analysis,
+        suggestions: checklist.suggestions,
+        disclaimers,
+      }
+    }
+
+    // 5C. Telugu: Complaint lifecycle (what happens after submission)
+    if (
+      lowerMsg.includes('తర్వాత') &&
+      (lowerMsg.includes('జరుగుతుంది') || lowerMsg.includes('ప్రక్రియ') || lowerMsg.includes('ఫిర్యాదు'))
+    ) {
+      const lifecycle = buildComplaintLifecycleExplanation({ language: 'te' })
+      return {
+        reply: lifecycle.reply,
+        provider: 'local_rule_engine',
+        structured_analysis: analysis,
+        suggestions: lifecycle.suggestions,
+        disclaimers,
+      }
+    }
+
+    // 5D. Telugu: Reporting overview / DISCOM identification / helpline 1912
+    if (
+      lowerMsg.includes('ఎలా ఫిర్యాదు') ||
+      lowerMsg.includes('ఫిర్యాదు చేయాలి') ||
+      lowerMsg.includes('సంప్రదించాలి') ||
+      lowerMsg.includes('ఏ డిస్కౌం') ||
+      lowerMsg.includes('ఏ విద్యుత్ శాఖ') ||
+      lowerMsg.includes('హెల్ప్‌లైన్') ||
+      lowerMsg.includes('1912') ||
+      lowerMsg.includes('tgspdcl') ||
+      lowerMsg.includes('tsnpdcl') ||
+      lowerMsg.includes('tgnpdcl')
+    ) {
+      const overview = buildReportingOverview({ location: lowerMsg, language: 'te' })
+      return {
+        reply: overview.reply,
+        provider: 'local_rule_engine',
+        structured_analysis: analysis,
+        suggestions: overview.suggestions,
         disclaimers,
       }
     }
@@ -819,6 +899,80 @@ export function generateClientRuleResponse(
       }
     }
 
+    // 5A. Hindi: Complaint drafting
+    if (
+      lowerMsg.includes('शिकायत') &&
+      (lowerMsg.includes('प्रारूप') ||
+        lowerMsg.includes('ड्राफ्ट') ||
+        lowerMsg.includes('पत्र') ||
+        lowerMsg.includes('लिखने') ||
+        lowerMsg.includes('मदद'))
+    ) {
+      const draft = buildDraftComplaint({ billContext, location: lowerMsg, language: 'hi' })
+      return {
+        reply: draft.reply,
+        provider: 'local_rule_engine',
+        structured_analysis: analysis,
+        suggestions: draft.suggestions,
+        disclaimers,
+      }
+    }
+
+    // 5B. Hindi: Information & Documents checklist
+    if (
+      lowerMsg.includes('दस्तावेज') ||
+      lowerMsg.includes('कागजात') ||
+      lowerMsg.includes('तैयार') ||
+      (lowerMsg.includes('शिकायत') && lowerMsg.includes('क्या चाहिए'))
+    ) {
+      const checklist = buildRequiredInformationChecklist({ billContext, language: 'hi' })
+      return {
+        reply: checklist.reply,
+        provider: 'local_rule_engine',
+        structured_analysis: analysis,
+        suggestions: checklist.suggestions,
+        disclaimers,
+      }
+    }
+
+    // 5C. Hindi: Complaint lifecycle (what happens after submission)
+    if (
+      lowerMsg.includes('के बाद') &&
+      (lowerMsg.includes('होता है') || lowerMsg.includes('प्रक्रिया') || lowerMsg.includes('शिकायत'))
+    ) {
+      const lifecycle = buildComplaintLifecycleExplanation({ language: 'hi' })
+      return {
+        reply: lifecycle.reply,
+        provider: 'local_rule_engine',
+        structured_analysis: analysis,
+        suggestions: lifecycle.suggestions,
+        disclaimers,
+      }
+    }
+
+    // 5D. Hindi: Reporting overview / DISCOM identification / helpline 1912
+    if (
+      lowerMsg.includes('शिकायत कैसे') ||
+      lowerMsg.includes('कहाँ शिकायत') ||
+      lowerMsg.includes('संपर्क करें') ||
+      lowerMsg.includes('कौन सा विभाग') ||
+      lowerMsg.includes('डिस्कॉम') ||
+      lowerMsg.includes('हेल्पलाइन') ||
+      lowerMsg.includes('1912') ||
+      lowerMsg.includes('tgspdcl') ||
+      lowerMsg.includes('tsnpdcl') ||
+      lowerMsg.includes('tgnpdcl')
+    ) {
+      const overview = buildReportingOverview({ location: lowerMsg, language: 'hi' })
+      return {
+        reply: overview.reply,
+        provider: 'local_rule_engine',
+        structured_analysis: analysis,
+        suggestions: overview.suggestions,
+        disclaimers,
+      }
+    }
+
     // 6. Greetings
     if (
       words.has('hello') ||
@@ -879,7 +1033,75 @@ export function generateClientRuleResponse(
     }
   }
 
-  if (isHelpPlugin && (words.has('meter') || words.has('test') || words.has('check') || words.has('creep') || words.has('reading') || words.has('lcd'))) {
+  if (isHelpPlugin) {
+    if (
+      lowerMsg.includes('draft') ||
+      lowerMsg.includes('write') ||
+      lowerMsg.includes('letter') ||
+      lowerMsg.includes('template')
+    ) {
+      const draft = buildDraftComplaint({ billContext, location: lowerMsg, language })
+      return {
+        reply: draft.reply,
+        provider: 'local_rule_engine',
+        structured_analysis: analysis,
+        suggestions: draft.suggestions,
+        disclaimers,
+      }
+    }
+
+    if (
+      lowerMsg.includes('document') ||
+      lowerMsg.includes('prepare') ||
+      lowerMsg.includes('checklist') ||
+      lowerMsg.includes('what do i need')
+    ) {
+      const checklist = buildRequiredInformationChecklist({ billContext, language })
+      return {
+        reply: checklist.reply,
+        provider: 'local_rule_engine',
+        structured_analysis: analysis,
+        suggestions: checklist.suggestions,
+        disclaimers,
+      }
+    }
+
+    if (
+      lowerMsg.includes('after') ||
+      lowerMsg.includes('lifecycle') ||
+      lowerMsg.includes('what happens')
+    ) {
+      const lifecycle = buildComplaintLifecycleExplanation({ language })
+      return {
+        reply: lifecycle.reply,
+        provider: 'local_rule_engine',
+        structured_analysis: analysis,
+        suggestions: lifecycle.suggestions,
+        disclaimers,
+      }
+    }
+
+    if (
+      lowerMsg.includes('report') ||
+      lowerMsg.includes('department') ||
+      lowerMsg.includes('discom') ||
+      lowerMsg.includes('contact') ||
+      lowerMsg.includes('1912') ||
+      lowerMsg.includes('tgspdcl') ||
+      lowerMsg.includes('tsnpdcl') ||
+      lowerMsg.includes('tgnpdcl')
+    ) {
+      const overview = buildReportingOverview({ location: lowerMsg, language })
+      return {
+        reply: overview.reply,
+        provider: 'local_rule_engine',
+        structured_analysis: analysis,
+        suggestions: overview.suggestions,
+        disclaimers,
+      }
+    }
+
+    if (words.has('meter') || words.has('test') || words.has('check') || words.has('creep') || words.has('reading') || words.has('lcd')) {
     return {
       reply:
         `### Meter Verification & Switch-Off Creep Test Protocol\n\n` +
@@ -901,6 +1123,7 @@ export function generateClientRuleResponse(
         'What should I do next?',
       ],
       disclaimers,
+    }
     }
   }
 
@@ -944,6 +1167,151 @@ export function generateClientRuleResponse(
         'Open Field Investigations',
         'What are common benign reasons for a consumption drop?',
       ],
+      disclaimers,
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // INTENT 0A: Complaint Drafting & Letter Templates
+  // ---------------------------------------------------------------------------
+  if (
+    (lowerMsg.includes('draft') ||
+      lowerMsg.includes('write') ||
+      lowerMsg.includes('help me write') ||
+      lowerMsg.includes('template') ||
+      lowerMsg.includes('sample letter')) &&
+    (lowerMsg.includes('complaint') ||
+      lowerMsg.includes('discom') ||
+      lowerMsg.includes('meter') ||
+      lowerMsg.includes('bill') ||
+      lowerMsg.includes('grievance') ||
+      lowerMsg.includes('reading'))
+  ) {
+    const draft = buildDraftComplaint({ billContext, location: lowerMsg, language: 'en' })
+    return {
+      reply: draft.reply,
+      provider: 'local_rule_engine',
+      structured_analysis: analysis,
+      suggestions: draft.suggestions,
+      disclaimers,
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // INTENT 0B: Information & Documents Preparation Checklist
+  // ---------------------------------------------------------------------------
+  if (
+    (lowerMsg.includes('document') ||
+      lowerMsg.includes('prepare') ||
+      lowerMsg.includes('checklist') ||
+      lowerMsg.includes('what do i need') ||
+      lowerMsg.includes('information and documents') ||
+      lowerMsg.includes('what information')) &&
+    (lowerMsg.includes('complaint') ||
+      lowerMsg.includes('report') ||
+      lowerMsg.includes('grievance') ||
+      lowerMsg.includes('discom') ||
+      lowerMsg.includes('submit'))
+  ) {
+    const checklist = buildRequiredInformationChecklist({ billContext, language: 'en' })
+    return {
+      reply: checklist.reply,
+      provider: 'local_rule_engine',
+      structured_analysis: analysis,
+      suggestions: checklist.suggestions,
+      disclaimers,
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // INTENT 0C: Complaint Lifecycle & Post-Submission Workflow
+  // ---------------------------------------------------------------------------
+  if (
+    lowerMsg.includes('what happens after') ||
+    lowerMsg.includes('after submit') ||
+    lowerMsg.includes('after submitting') ||
+    lowerMsg.includes('after filing') ||
+    lowerMsg.includes('after complaint') ||
+    lowerMsg.includes('inspection procedure') ||
+    lowerMsg.includes('complaint lifecycle')
+  ) {
+    const lifecycle = buildComplaintLifecycleExplanation({ language: 'en' })
+    return {
+      reply: lifecycle.reply,
+      provider: 'local_rule_engine',
+      structured_analysis: analysis,
+      suggestions: lifecycle.suggestions,
+      disclaimers,
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // INTENT 0D: Local Officer Contact & Lineman Phone Numbers (Unconfirmed Info Handling)
+  // ---------------------------------------------------------------------------
+  if (
+    (lowerMsg.includes('phone number') ||
+      lowerMsg.includes('mobile number') ||
+      lowerMsg.includes('contact number') ||
+      lowerMsg.includes('officer number') ||
+      lowerMsg.includes('lineman number') ||
+      lowerMsg.includes('ae number')) &&
+    (lowerMsg.includes('discom') ||
+      lowerMsg.includes('lineman') ||
+      lowerMsg.includes('officer') ||
+      lowerMsg.includes('substation') ||
+      lowerMsg.includes('sub-station') ||
+      lowerMsg.includes('section') ||
+      lowerMsg.includes('local') ||
+      lowerMsg.includes('engineer'))
+  ) {
+    return {
+      reply:
+        `### Official Local Officer & Lineman Contact Numbers\n\n` +
+        `Direct mobile numbers of local linemen, sub-engineers, and section Assistant Engineers (AEs) are not published as fixed contact lines because personnel shift across rosters and section boundaries. TheftGuard AI does not generate or store private personal numbers to avoid outdated or misleading contact information.\n\n` +
+        `**To find your authorized, current local section contact:**\n` +
+        `1. **Check your Spot Bill Receipt**: Your printed monthly bill lists the official telephone number for your specific **"ERO / Section Office"** near the top or bottom margin.\n` +
+        `2. **Call 1912**: Dial **1912** (available 24x7 statewide) and provide your Unique Service Number (USC). The centralized operator will dispatch or connect you directly to the on-duty section officer for your distribution transformer.`,
+      provider: 'local_rule_engine',
+      structured_analysis: analysis,
+      suggestions: [
+        'How do I report a suspected electricity issue?',
+        'Which official electricity department should I contact?',
+        'What information and documents should I prepare?',
+      ],
+      disclaimers,
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // INTENT 0E: How to Report / DISCOM Identification / Department Contact / 1912 Helpline
+  // ---------------------------------------------------------------------------
+  if (
+    lowerMsg.includes('how do i report') ||
+    lowerMsg.includes('how to report') ||
+    lowerMsg.includes('where to report') ||
+    lowerMsg.includes('which electricity department') ||
+    lowerMsg.includes('which official electricity') ||
+    lowerMsg.includes('which discom') ||
+    lowerMsg.includes('who is my discom') ||
+    lowerMsg.includes('who should i contact') ||
+    lowerMsg.includes('which department should i contact') ||
+    lowerMsg.includes('report a suspected') ||
+    lowerMsg.includes('report electricity issue') ||
+    lowerMsg.includes('register a complaint') ||
+    lowerMsg.includes('file a complaint') ||
+    lowerMsg.includes('lodge a complaint') ||
+    lowerMsg.includes('tgspdcl') ||
+    lowerMsg.includes('tsnpdcl') ||
+    lowerMsg.includes('tgnpdcl') ||
+    lowerMsg.includes('tsspdcl') ||
+    lowerMsg.includes('1912')
+  ) {
+    const overview = buildReportingOverview({ location: lowerMsg, language: 'en' })
+    return {
+      reply: overview.reply,
+      provider: 'local_rule_engine',
+      structured_analysis: analysis,
+      suggestions: overview.suggestions,
       disclaimers,
     }
   }

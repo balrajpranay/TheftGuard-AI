@@ -58,6 +58,7 @@ class BillContext(BaseModel):
     prev_period: Optional[str] = Field(None, max_length=50, description="Previous billing label")
     curr_period: Optional[str] = Field(None, max_length=50, description="Current billing label")
     consumer_matched: Optional[bool] = Field(None, description="Whether both bills verified same consumer")
+    consumer_number: Optional[str] = Field(None, max_length=50, description="Unique Service Number (USC) or consumer number")
 
 
 class QuestionnaireAnswers(BaseModel):
@@ -1179,6 +1180,209 @@ def generate_rule_based_response(
             "How much electricity does an AC consume in 8 hours?",
             "Why is my electricity bill so high this month?",
             "Tips to reduce next month’s bill",
+        ]
+        return AssistantChatResponse(reply=reply, suggestions=suggestions, analysis=analysis, provider="local_rule_engine", timestamp=now_iso)
+
+    # 9B. Complaint Drafting & Letter Templates
+    if (
+        ("draft" in msg_lower or "write" in msg_lower or "template" in msg_lower or "letter" in msg_lower)
+        and ("complaint" in msg_lower or "discom" in msg_lower or "meter" in msg_lower or "bill" in msg_lower or "grievance" in msg_lower or "reading" in msg_lower)
+    ):
+        usc = bill.consumer_number if bill and bill.consumer_number else "[Your Unique Service Number / USC]"
+        curr_u = bill.curr_units if bill and bill.curr_units is not None else "[Billed Units, e.g. 350]"
+        prev_u = bill.prev_units if bill and bill.prev_units is not None else "[Previous Units, e.g. 150]"
+        discom_name = "Southern Power Distribution Company of Telangana Limited (TGSPDCL)" if "hyderabad" in msg_lower or "south" in msg_lower or "ranga" in msg_lower else "Northern Power Distribution Company of Telangana Limited (TGNPDCL)" if "warangal" in msg_lower or "north" in msg_lower or "karimnagar" in msg_lower else "TGSPDCL / TGNPDCL"
+
+        reply = (
+            "### Structured Complaint Draft Template\n\n"
+            "You can copy and adapt this professional, non-accusatory draft for submission to your distribution utility:\n\n"
+            "```text\n"
+            "Date: [Current Date]\n\n"
+            "To\n"
+            "The Assistant Engineer (Operations),\n"
+            f"Section Office, {discom_name},\n"
+            "[Area / Sub-station Name, Telangana]\n\n"
+            f"Subject: Request for Spot Bill Reading Verification & Inspection — Service No (USC): {usc}\n\n"
+            "Respected Sir / Madam,\n\n"
+            f"I am writing in regard to our domestic electricity connection under Unique Service Number (USC): {usc}, registered in the name of [Consumer Name], located at [Full Address / Nearby Landmark].\n\n"
+            "Upon reviewing our latest spot bill dated [Bill Date], I observed a notable discrepancy between the reading entered on the bill receipt and the physical meter display:\n"
+            f"• Billed 'Present Reading': [Reading printed on bill] units (Billed Units: {curr_u} kWh)\n"
+            "• Physical Meter Reading (Screen 2 LCD): [Reading shown on meter dial] kWh (as of [Inspection Date])\n"
+            f"• Baseline Average Consumption: Approximately {prev_u} kWh/month\n\n"
+            "We carried out a main switch-off test and confirmed that the meter LED stops blinking when the MCB is off. No high-power appliances or additional loads were operated during this cycle. The discrepancy appears to be an over-billing punch entry error or an unverified estimation.\n\n"
+            "I kindly request your office to:\n"
+            "1. Depute an inspecting officer to verify the physical meter reading and seal integrity.\n"
+            "2. Issue a rectified bill based on actual physical consumption under the Telangana Electricity Supply Code.\n\n"
+            "I have attached a dated photograph of the meter display and a copy of the recent spot bill receipt for your reference.\n\n"
+            "Thank you.\n\n"
+            "Yours sincerely,\n"
+            "[Your Name]\n"
+            "Contact Mobile: [Your Phone Number]\n"
+            f"USC Number: {usc}\n"
+            "Meter Serial Number: [Meter Serial Number]\n"
+            "```\n\n"
+            "⚠️ **Crucial Disclaimer — Draft Only (Not Automatically Submitted)**:\n"
+            "• **No Automated Submission**: TheftGuard AI does not connect to DISCOM dispatch systems and cannot submit complaints on your behalf.\n"
+            "• **Next Step**: Copy this text, fill in your details, and submit via:\n"
+            "  1. Centralized 24x7 Helpline: **1912**\n"
+            "  2. Official Web Portal (tgspdcl.cgg.gov.in or tgnpdcl.com) or Mobile App\n"
+            "  3. Hand-delivery to your local Section Office Assistant Engineer (AE / Operations)."
+        )
+        suggestions = [
+            "What information and documents should I prepare?",
+            "What happens after I submit a complaint?",
+            "Which official electricity department should I contact?",
+        ]
+        return AssistantChatResponse(reply=reply, suggestions=suggestions, analysis=analysis, provider="local_rule_engine", timestamp=now_iso)
+
+    # 9C. Information & Documents Preparation Checklist
+    if (
+        ("document" in msg_lower or "prepare" in msg_lower or "checklist" in msg_lower or "what do i need" in msg_lower or "what information" in msg_lower)
+        and ("complaint" in msg_lower or "report" in msg_lower or "grievance" in msg_lower or "discom" in msg_lower or "submit" in msg_lower)
+    ):
+        usc_txt = f" (Your active bill lists USC: **{bill.consumer_number}**)" if bill and bill.consumer_number else ""
+        reply = (
+            "### Information & Documents to Prepare for an Official Electricity Grievance\n\n"
+            "Having accurate records ensures prompt departmental dispatch and avoids duplicate inspection fees:\n\n"
+            f"1. **Unique Service Number (USC) / Consumer Number**{usc_txt}:\n"
+            "   - Printed at the top of your monthly spot bill receipt (essential for locating your distribution transformer and billing ledger).\n\n"
+            "2. **Physical Meter Dial Reading & Serial Number**:\n"
+            "   - The physical serial number stamped on the meter casing plate.\n"
+            "   - Current cumulative energy reading from **Screen 2 (Cumulative kWh)** and timestamp from **Screen 1 (Date)**.\n\n"
+            "3. **Recent Spot Bill Receipts**:\n"
+            "   - Hard copy or digital image of your 1–3 most recent bills to demonstrate historical baseline vs the billed entry discrepancy.\n\n"
+            "4. **Location & Supply Identifiers**:\n"
+            "   - Full door address, landmark, and the distribution pole number (stenciled in yellow/black on the pole outside).\n\n"
+            "5. **Clear Photographs (Taken Safely)**:\n"
+            "   - A legible photograph of the physical LCD dial showing cumulative units.\n"
+            "   - Photographs of any burnt terminals, broken seals, or physical wire anomalies.\n\n"
+            "⚡ **Crucial Safety Warning**:\n"
+            "Never touch meter terminals, service wires, overhead lines, or distribution poles. Take photographs only from a safe standing distance."
+        )
+        suggestions = [
+            "What happens after I submit a complaint?",
+            "Can you help me write a clear complaint?",
+            "Which official electricity department should I contact?",
+        ]
+        return AssistantChatResponse(reply=reply, suggestions=suggestions, analysis=analysis, provider="local_rule_engine", timestamp=now_iso)
+
+    # 9D. Complaint Lifecycle & Post-Submission Workflow
+    if (
+        "what happens after" in msg_lower
+        or "after submit" in msg_lower
+        or "after submitting" in msg_lower
+        or "after filing" in msg_lower
+        or "after complaint" in msg_lower
+        or "inspection procedure" in msg_lower
+        or "complaint lifecycle" in msg_lower
+    ):
+        reply = (
+            "### What Happens After You Submit an Electricity Complaint?\n\n"
+            "Under the Telangana Electricity Regulatory Commission (TGERC) standards and Citizens' Charter, complaints follow a formal statutory workflow:\n\n"
+            "1. **Docket Generation & SMS Tracking**:\n"
+            "   - An official Docket / Complaint Number is generated instantly and sent to your registered mobile number via SMS.\n\n"
+            "2. **Site Inspection by Technical Officers**:\n"
+            "   - A departmental Lineman, Sub-Engineer, or Assistant Engineer (AE / Operations) is deputed to inspect your physical premises.\n"
+            "   - They verify physical meter serial matching, seal integrity, and observe the optical LED pulse (running a switch-off test).\n\n"
+            "3. **On-Site or Laboratory Meter Testing**:\n"
+            "   - If the meter dial is disputed, an on-site electronic testing kit is connected, or the meter is packaged in a sealed bag in your presence for testing at the DISCOM MRT (Meter Relay & Testing) division.\n\n"
+            "4. **Bill Rectification & Ledger Adjustment**:\n"
+            "   - If an entry error is confirmed (meter reading on bill exceeds current physical dial), the Electricity Revenue Office (ERO) re-issues a revised spot bill under standard adjustment formulas.\n"
+            "   - If the meter was stuck or defective, charges are reassessed based on the average consumption of the preceding 3–6 normal billing months.\n\n"
+            "5. **Consumer Escalation (CGRF & Ombudsman)**:\n"
+            "   - If your grievance is not resolved within the charter timeline, consumers have the legal right to escalate to the **Consumer Grievance Redressal Forum (CGRF)** and the **Vidyut Ombudsman** under TGERC."
+        )
+        suggestions = [
+            "Can you help me write a clear complaint?",
+            "What information and documents should I prepare?",
+            "Which official electricity department should I contact?",
+        ]
+        return AssistantChatResponse(reply=reply, suggestions=suggestions, analysis=analysis, provider="local_rule_engine", timestamp=now_iso)
+
+    # 9E. Local Officer Contact Numbers (Unconfirmed Info Handling)
+    if (
+        ("phone number" in msg_lower or "mobile number" in msg_lower or "contact number" in msg_lower or "officer number" in msg_lower or "lineman number" in msg_lower or "ae number" in msg_lower)
+        and ("discom" in msg_lower or "lineman" in msg_lower or "officer" in msg_lower or "substation" in msg_lower or "section" in msg_lower or "local" in msg_lower or "engineer" in msg_lower)
+    ):
+        reply = (
+            "### Official Local Officer & Lineman Contact Numbers\n\n"
+            "Direct mobile numbers of local linemen, sub-engineers, and section Assistant Engineers (AEs) are not published as fixed contact lines because personnel shift across rosters and section boundaries. TheftGuard AI does not generate or store private personal numbers to avoid outdated or misleading contact information.\n\n"
+            "**To find your authorized, current local section contact:**\n"
+            "1. **Check your Spot Bill Receipt**: Your printed monthly bill lists the official telephone number for your specific **'ERO / Section Office'** near the top or bottom margin.\n"
+            "2. **Call 1912**: Dial **1912** (available 24x7 statewide) and provide your Unique Service Number (USC). The centralized operator will dispatch or connect you directly to the on-duty section officer for your distribution transformer."
+        )
+        suggestions = [
+            "How do I report a suspected electricity issue?",
+            "Which official electricity department should I contact?",
+            "What information and documents should I prepare?",
+        ]
+        return AssistantChatResponse(reply=reply, suggestions=suggestions, analysis=analysis, provider="local_rule_engine", timestamp=now_iso)
+
+    # 9F. How to Report / DISCOM Identification / Helpline 1912
+    if (
+        "how do i report" in msg_lower
+        or "how to report" in msg_lower
+        or "where to report" in msg_lower
+        or "which electricity department" in msg_lower
+        or "which official electricity" in msg_lower
+        or "which discom" in msg_lower
+        or "who is my discom" in msg_lower
+        or "who should i contact" in msg_lower
+        or "which department should i contact" in msg_lower
+        or "report a suspected" in msg_lower
+        or "report electricity issue" in msg_lower
+        or "register a complaint" in msg_lower
+        or "file a complaint" in msg_lower
+        or "lodge a complaint" in msg_lower
+        or "tgspdcl" in msg_lower
+        or "tsnpdcl" in msg_lower
+        or "tgnpdcl" in msg_lower
+        or "tsspdcl" in msg_lower
+        or "1912" in msg_lower
+    ):
+        is_hyd = any(d in msg_lower for d in ["hyderabad", "secunderabad", "ranga reddy", "rangareddy", "medchal", "nalgonda", "mahabubnagar", "sangareddy", "siddipet", "medak"])
+        is_wgl = any(d in msg_lower for d in ["warangal", "hanumakonda", "karimnagar", "khammam", "nizamabad", "adilabad", "jagtial", "mancherial"])
+        
+        reply = (
+            "### How to Report a Suspected Electricity Issue in Telangana\n\n"
+            "In Telangana, consumer billing disputes, suspected meter faults, sparks, or service line irregularities are handled through official, verified channels:\n\n"
+            "• **Statewide 24x7 Toll-Free Consumer Helpline**: **1912** (accessible across all districts in Telangana).\n"
+        )
+        if is_hyd:
+            reply += (
+                "• **Your Official Distribution Utility**: **Southern Power Distribution Company of Telangana Limited (TGSPDCL)**\n"
+                "  - Official Web Portal: **https://tgspdcl.cgg.gov.in**\n"
+                "  - Mobile App: **TGSPDCL**\n"
+                "  - Operating Headquarters: Mint Compound, Hyderabad\n\n"
+            )
+        elif is_wgl:
+            reply += (
+                "• **Your Official Distribution Utility**: **Northern Power Distribution Company of Telangana Limited (TGNPDCL)**\n"
+                "  - Official Web Portal: **https://tgnpdcl.com**\n"
+                "  - Mobile App: **TGNPDCL**\n"
+                "  - Operating Headquarters: Nakkalagutta, Hanumakonda / Warangal\n\n"
+            )
+        else:
+            reply += (
+                "• **Distribution Utilities by Region**:\n"
+                "  1. **TGSPDCL (Southern Telangana)**: Serves Hyderabad, Ranga Reddy, Medchal-Malkajgiri, Mahabubnagar, Nalgonda, Sangareddy, Medak, Siddipet, Vikarabad, Suryapet, etc. (*Portal: https://tgspdcl.cgg.gov.in*)\n"
+                "  2. **TGNPDCL (Northern Telangana)**: Serves Warangal, Hanumakonda, Karimnagar, Khammam, Nizamabad, Adilabad, Bhadradri Kothagudem, Jagtial, Mancherial, etc. (*Portal: https://tgnpdcl.com*)\n\n"
+                "*(Tell me your district or town if you would like me to confirm your exact DISCOM. Your utility name and section code are also printed at the top of your monthly spot bill receipt.)*\n\n"
+            )
+        reply += (
+            "**3 Verified Submission Channels:**\n"
+            "1. **Phone (Helpline 1912)**: Call 1912 to register an official grievance with an agent; an SMS tracking docket number is issued immediately.\n"
+            "2. **Digital (DISCOM Mobile App / Web Portal)**: Submit a service request under the 'Consumer Grievances / Meter Verification' section with photos.\n"
+            "3. **Physical (Section Office / ERO)**: Submit a written letter to the Assistant Engineer (AE / Operations) at your local distribution section office.\n\n"
+            "⚠️ **Verified Contacts & Safety Rules**:\n"
+            "• **Do not rely on unverified phone numbers**: Individual line-staff numbers change frequently. Look at the 'ERO / Section Phone' printed on your physical spot bill receipt or call 1912 for the authorized officer.\n"
+            "• **Electrical Safety**: Never touch meters, live wires, service cables, or distribution poles. Conduct observations from a safe distance."
+        )
+        suggestions = [
+            "What information and documents should I prepare?",
+            "What happens after I submit a complaint?",
+            "Can you help me write a clear complaint?",
+            "My location is Hyderabad (TGSPDCL)",
         ]
         return AssistantChatResponse(reply=reply, suggestions=suggestions, analysis=analysis, provider="local_rule_engine", timestamp=now_iso)
 

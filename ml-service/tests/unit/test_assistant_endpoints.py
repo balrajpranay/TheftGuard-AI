@@ -886,6 +886,68 @@ class TestAssistantEndpoints(unittest.TestCase):
         self.assertIn("Bill Comparison (/app/bill-comparison)", reply)
         self.assertIn("Load Telangana sample bills (Demo)", reply)
 
+    def test_reporting_guidance_discom_routing(self):
+        status_code, data = request_endpoint(
+            "POST",
+            "/v1/assistant/chat",
+            body={"message": "How do I report a suspected electricity issue in Hyderabad?"},
+        )
+        self.assertEqual(status_code, 200)
+        reply = data["reply"]
+        self.assertIn("1912", reply)
+        self.assertIn("TGSPDCL", reply)
+        self.assertIn("tgspdcl.cgg.gov.in", reply)
+
+        status_code_w, data_w = request_endpoint(
+            "POST",
+            "/v1/assistant/chat",
+            body={"message": "Which electricity department should I contact in Warangal?"},
+        )
+        self.assertEqual(status_code_w, 200)
+        self.assertIn("TGNPDCL", data_w["reply"])
+        self.assertIn("1912", data_w["reply"])
+
+    def test_reporting_guidance_documents_checklist(self):
+        status_code, data = request_endpoint(
+            "POST",
+            "/v1/assistant/chat",
+            body={
+                "message": "What information and documents should I prepare for a complaint?",
+                "bill_context": {"consumer_number": "123456789"},
+            },
+        )
+        self.assertEqual(status_code, 200)
+        reply = data["reply"]
+        self.assertIn("Unique Service Number (USC)", reply)
+        self.assertIn("123456789", reply)
+        self.assertIn("Screen 2 (Cumulative kWh)", reply)
+        self.assertIn("Never touch meter terminals", reply)
+
+    def test_reporting_guidance_complaint_lifecycle(self):
+        status_code, data = request_endpoint(
+            "POST",
+            "/v1/assistant/chat",
+            body={"message": "What happens after I submit a complaint?"},
+        )
+        self.assertEqual(status_code, 200)
+        reply = data["reply"]
+        self.assertIn("Docket Generation", reply)
+        self.assertIn("Site Inspection", reply)
+        self.assertIn("Bill Rectification", reply)
+        self.assertIn("CGRF", reply)
+
+    def test_reporting_guidance_complaint_draft(self):
+        status_code, data = request_endpoint(
+            "POST",
+            "/v1/assistant/chat",
+            body={"message": "Can you help me write a clear complaint for Hyderabad?"},
+        )
+        self.assertEqual(status_code, 200)
+        reply = data["reply"]
+        self.assertIn("Assistant Engineer (Operations)", reply)
+        self.assertIn("Draft Only (Not Automatically Submitted)", reply)
+        self.assertIn("1912", reply)
+
 
 if __name__ == "__main__":
     unittest.main()

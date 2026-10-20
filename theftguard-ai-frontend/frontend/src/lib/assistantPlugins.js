@@ -32,6 +32,12 @@ import {
 } from './householdQuestionnaire.js'
 import { cleanNumber } from './billComparison.js'
 import { listBillExtractions, listBatches, listInvestigations } from './dbApi.js'
+import {
+  buildReportingOverview,
+  buildRequiredInformationChecklist,
+  buildComplaintLifecycleExplanation,
+  buildDraftComplaint,
+} from './electricityReportingGuidance.js'
 
 export const ASSISTANT_PLUGINS = [
   {
@@ -742,7 +748,85 @@ export async function executeBillCalculatorPlugin({
 /**
  * 7. Electricity Help & Guidance Plugin
  */
-export async function executeElectricityHelpPlugin({ params = {} } = {}) {
+export async function executeElectricityHelpPlugin({ params = {}, billContext = null } = {}) {
+  const query = String(params.query || params.topic || '').toLowerCase()
+  const language = params.language || 'en'
+  const location = params.location || query
+
+  if (
+    query.includes('draft') ||
+    query.includes('write') ||
+    query.includes('letter') ||
+    query.includes('template') ||
+    query.includes('లేఖ') ||
+    query.includes('ప్రారూ') ||
+    query.includes('प्रारूप')
+  ) {
+    const draft = buildDraftComplaint({ billContext, location, language })
+    return {
+      status: 'ok',
+      summary: 'Structured, non-accusatory draft complaint for spot bill or meter inspection',
+      message: draft.reply,
+      suggestions: draft.suggestions,
+    }
+  }
+
+  if (
+    query.includes('document') ||
+    query.includes('prepare') ||
+    query.includes('checklist') ||
+    query.includes('పత్రాలు') ||
+    query.includes('సమాచారం') ||
+    query.includes('दस्तावेज')
+  ) {
+    const checklist = buildRequiredInformationChecklist({ billContext, language })
+    return {
+      status: 'ok',
+      summary: 'Information and documents checklist for filing an electricity complaint',
+      message: checklist.reply,
+      suggestions: checklist.suggestions,
+    }
+  }
+
+  if (
+    query.includes('after') ||
+    query.includes('lifecycle') ||
+    query.includes('what happens') ||
+    query.includes('తర్వాత') ||
+    query.includes('ప్రక్రియ') ||
+    query.includes('प्रक्रिया')
+  ) {
+    const lifecycle = buildComplaintLifecycleExplanation({ language })
+    return {
+      status: 'ok',
+      summary: 'Post-submission electricity complaint lifecycle and inspection workflow',
+      message: lifecycle.reply,
+      suggestions: lifecycle.suggestions,
+    }
+  }
+
+  if (
+    query.includes('report') ||
+    query.includes('department') ||
+    query.includes('discom') ||
+    query.includes('contact') ||
+    query.includes('1912') ||
+    query.includes('tgspdcl') ||
+    query.includes('tsnpdcl') ||
+    query.includes('సంప్రదించాలి') ||
+    query.includes('ఫిర్యాదు') ||
+    query.includes('विभाग') ||
+    query.includes('शिकायत')
+  ) {
+    const overview = buildReportingOverview({ location, language })
+    return {
+      status: 'ok',
+      summary: 'Telangana official reporting channels, DISCOMs, and 1912 helpline',
+      message: overview.reply,
+      suggestions: overview.suggestions,
+    }
+  }
+
   const text =
     `### Electricity Help, Meter Testing & Consumer Guidance\n\n` +
     `1. **The Switch-Off Creep Test (Verify Phantom Meter Blinking)**:\n` +
@@ -759,16 +843,20 @@ export async function executeElectricityHelpPlugin({ params = {} } = {}) {
     `3. **Detecting Reader Punch Errors & Transposed Digits**:\n` +
     `   - Compare the **"Present Reading"** printed on your spot bill receipt with your meter's Screen 2.\n` +
     `   - If the receipt reading is *higher* than what your physical meter shows right now, the meter reader made an over-billing punch error.\n` +
-    `   - You can photograph the meter display and submit a spot-billing revision request to your local Discom sub-station under the Electricity Supply Code.`
+    `   - You can photograph the meter display and submit a spot-billing revision request to your local Discom sub-station under the Electricity Supply Code.\n\n` +
+    `4. **Official Telangana Reporting Channels**:\n` +
+    `   - **Helpline 1912**: Statewide 24x7 toll-free helpline for billing disputes and meter inspections.\n` +
+    `   - **DISCOMs**: TGSPDCL (Southern Telangana: https://tgspdcl.cgg.gov.in) and TGNPDCL (Northern Telangana: https://tgnpdcl.com).`
 
   return {
     status: 'ok',
     summary: 'Practical guidance for meter verification, LCD dials, and consumer rights',
     message: text,
     suggestions: [
-      'How to report a spot-billing meter punch error?',
-      'How much electricity does an AC consume in 8 hours?',
-      'Why is my electricity bill so high this month?',
+      'How do I report a suspected electricity issue?',
+      'Which official electricity department should I contact?',
+      'What information and documents should I prepare?',
+      'Can you help me write a clear complaint?',
     ],
   }
 }
@@ -897,7 +985,7 @@ export async function executePluginAction({
       })
 
     case 'electricity_help':
-      return executeElectricityHelpPlugin({ params })
+      return executeElectricityHelpPlugin({ params, billContext })
 
     case 'general_assistant':
     default:
