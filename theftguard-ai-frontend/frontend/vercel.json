@@ -3,7 +3,7 @@
   "rewrites": [
     {
       "source": "/ml/:path*",
-      "destination": "https://YOUR-RENDER-BACKEND-URL.onrender.com/:path*"
+      "destination": "https://theftguard-ai.onrender.com/:path*"
     },
     {
       "source": "/(.*)",
