@@ -97,7 +97,7 @@ Non-technical losses (NTLs)—principally electricity theft, meter tampering, an
 
 ## 6. AI Assistant Plugins & Grounded Tools
 
-TheftGuard AI features a dedicated, zero-hallucination conversational AI workspace (`/app/chat`) equipped with 8 selectable plugins and grounded application tools. Each plugin performs real deterministic operations against live application state, client-side OCR extractions, and authenticated database records—strictly eliminating decorative buttons or invented AI responses.
+TheftGuard AI features a dedicated, grounded conversational AI workspace (`/app/chat`) equipped with 8 selectable plugins, transparent limitations, and grounded application tools. Each plugin performs real deterministic operations against live application state, client-side OCR extractions, and authenticated database records—strictly eliminating decorative buttons or invented AI responses.
 
 ### 6.1 The 8 Grounded Assistant Plugins
 

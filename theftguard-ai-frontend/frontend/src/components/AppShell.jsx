@@ -512,25 +512,27 @@ export default function AppShell() {
       </div>
 
       {/* Floating Global AI Assistant Trigger */}
-      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 print:hidden flex items-center gap-2">
-        <Link
-          to="/app/chat"
-          className="hidden sm:flex items-center gap-1.5 rounded-full bg-ink px-3.5 py-2 text-xs font-semibold text-white shadow-lg hover:bg-ink/90 border border-slate-700 transition-all cursor-pointer min-h-[44px]"
-          title="Open Dedicated Full-Page AI Chat Workspace"
-        >
-          <Icon name="chat" className="h-3.5 w-3.5 text-gold" />
-          <span>{t('assistantDrawer.fullChat')}</span>
-        </Link>
-        <button
-          type="button"
-          onClick={() => setAssistantOpen(true)}
-          className="flex items-center gap-2 rounded-full bg-gold px-3.5 py-2.5 sm:px-4 text-xs font-bold text-ink shadow-lg hover:bg-[#E0B220] hover:shadow-xl transition-all border border-gold focus:outline-hidden focus:ring-2 focus:ring-gold cursor-pointer min-h-[44px]"
-          aria-label={t('assistantDrawer.askAssistant')}
-        >
-          <span className="text-base leading-none">⚡</span>
-          <span>{t('assistantDrawer.askAssistant')}</span>
-        </button>
-      </div>
+      {!(isChatRoute || assistantOpen || menu) && (
+        <div className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] right-[calc(1rem+env(safe-area-inset-right,0px))] sm:bottom-6 sm:right-6 z-40 print:hidden flex items-center gap-2">
+          <Link
+            to="/app/chat"
+            className="hidden sm:flex items-center gap-1.5 rounded-full bg-ink px-3.5 py-2 text-xs font-semibold text-white shadow-lg hover:bg-ink/90 border border-slate-700 transition-all cursor-pointer min-h-[44px]"
+            title="Open Dedicated Full-Page AI Chat Workspace"
+          >
+            <Icon name="chat" className="h-3.5 w-3.5 text-gold" />
+            <span>{t('assistantDrawer.fullChat')}</span>
+          </Link>
+          <button
+            type="button"
+            onClick={() => setAssistantOpen(true)}
+            className="flex items-center gap-2 rounded-full bg-gold px-3.5 py-2.5 sm:px-4 text-xs font-bold text-ink shadow-lg hover:bg-[#E0B220] hover:shadow-xl transition-all border border-gold focus:outline-hidden focus:ring-2 focus:ring-gold cursor-pointer min-h-[44px]"
+            aria-label={t('assistantDrawer.askAssistant')}
+          >
+            <span className="text-base leading-none">⚡</span>
+            <span>{t('assistantDrawer.askAssistant')}</span>
+          </button>
+        </div>
+      )}
 
       {/* Global AI Assistant Drawer */}
       <AIAssistantDrawer

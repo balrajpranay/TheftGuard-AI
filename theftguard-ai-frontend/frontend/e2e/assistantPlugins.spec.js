@@ -71,13 +71,13 @@ test.describe('TheftGuard AI — Assistant Plugins & Grounded Tools E2E Tests', 
     await expect(page.getByText(/switch-off creep test/i)).toBeVisible({ timeout: 15000 })
   })
 
-  test('4. Tools menu dropdown displays all 8 grounded plugins with Zero-Hallucination guarantee', async ({ page }) => {
+  test('4. Tools menu dropdown displays all 8 grounded plugins with Grounded Responses guarantee', async ({ page }) => {
     const toolsBtn = page.getByRole('button', { name: /open tools menu/i })
     await toolsBtn.click()
 
     const menu = page.getByRole('menu', { name: /application tools/i })
     await expect(menu).toBeVisible()
-    await expect(menu.getByText(/zero-hallucination/i)).toBeVisible()
+    await expect(menu.getByText(/grounded responses/i)).toBeVisible()
 
     // Check plugin entries inside dropdown
     await expect(menu.getByRole('menuitem', { name: /bill comparison/i })).toBeVisible()

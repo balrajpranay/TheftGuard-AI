@@ -738,7 +738,7 @@ def generate_rule_based_response(
             "  When you ask a question, the model does not 'think' like a human or look up pre-written answers. Instead, it predicts the most statistically probable next words (tokens) one by one, based on the context of your conversation.\n\n"
             f"{example_text}"
             "• **How TheftGuard AI uses this:**\n"
-            "  In TheftGuard AI, conversational AI handles natural language explanations, while verified deterministic math engines compute exact kilowatt-hours and billing numbers to ensure 100% calculation accuracy with zero hallucination."
+            "  In TheftGuard AI, conversational AI handles natural language explanations, while verified deterministic math engines compute kilowatt-hours and billing numbers using grounded evidence, performing calculations carefully, disclosing uncertainty where data is incomplete, and never inventing results."
         )
         suggestions = [
             "What is Python, and why is it used in AI?",

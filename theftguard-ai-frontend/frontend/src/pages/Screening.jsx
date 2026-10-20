@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Badge, Button, Notice, PageHeader, Panel, Spinner } from '../components/ui'
 import { useAppState } from '../state/AppState'
+import { useLanguage } from '../context/LanguageContext'
 import { parseCsv } from '../lib/csv'
 import { downloadCsv } from '../lib/exportCsv'
 import { FEATURES, FEATURE_NAMES, NEVER_NULL } from '../data/features'
@@ -92,6 +93,7 @@ function Check({ label, ok, children }) {
 
 export default function Screening() {
   const navigate = useNavigate()
+  const { language, t } = useLanguage()
   const { loadUploaded, loadScreened, loadDemo, thresholds, loadBatchFromDb, dbConnected } = useAppState()
   const inputRef = useRef(null)
   const abortRef = useRef(null)
@@ -345,9 +347,8 @@ export default function Screening() {
 
   return (
     <>
-      <PageHeader title="Screening">
-        Select a CSV file with the 13 model feature columns to check and screen with the TheftGuard AI machine learning
-        model.
+      <PageHeader title={t('screening.title')}>
+        {t('screening.subtitle')}
       </PageHeader>
 
       <div className="grid gap-5 lg:grid-cols-[3fr_2fr]">

@@ -72,16 +72,19 @@ export default function Landing() {
           <div>
             <p className="text-sm font-medium text-gold-deep">{t('landing.tagline')}</p>
             <h1 className="mt-3 text-3xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl break-words">
-              Analyze consumption.<br />
-              Detect suspicious patterns.<br />
-              Support investigation.
+              {(t('landing.headline') || '').split('\n').map((line, idx, arr) => (
+                <span key={idx}>
+                  {line}
+                  {idx < arr.length - 1 ? <br /> : null}
+                </span>
+              ))}
             </h1>
             <p className="mt-5 max-w-xl text-base sm:text-lg text-ink/80">
               {t('landing.description')}
             </p>
-            <div className="mt-7 flex flex-wrap gap-2.5 sm:gap-3">
-              <Button to="/app/dashboard" variant="primary" icon="arrowRight">{t('landing.openDemo')}</Button>
-              <Button to="/app/model" variant="secondary">{t('landing.readVerified')}</Button>
+            <div className="mt-7 flex flex-col sm:flex-row flex-wrap gap-2.5 sm:gap-3">
+              <Button to="/app/dashboard" variant="primary" icon="arrowRight" className="w-full sm:w-auto text-center">{t('landing.openDemo')}</Button>
+              <Button to="/app/model" variant="secondary" className="w-full sm:w-auto text-center">{t('landing.readVerified')}</Button>
             </div>
           </div>
 
@@ -142,13 +145,16 @@ export default function Landing() {
           <div>
             <h2 className="text-3xl font-bold tracking-tight">{t('landing.modelTitle')}</h2>
             <p className="mt-3 text-ink/85">
-              On a held-out test of {MODEL_FACTS.testRows.toLocaleString('en-IN')} customers, the model flagged{' '}
-              {flagged.toLocaleString('en-IN')} (10.7%). Of those, {MODEL_FACTS.confusion.TP} carried the dataset label
-              FLAG = 1, and it missed {MODEL_FACTS.confusion.FN} of the {MODEL_FACTS.testPositives} labelled customers.
+              {t('landing.modelDesc1', {
+                testRows: MODEL_FACTS.testRows.toLocaleString('en-IN'),
+                flagged: flagged.toLocaleString('en-IN'),
+                tp: MODEL_FACTS.confusion.TP,
+                fn: MODEL_FACTS.confusion.FN,
+                positives: MODEL_FACTS.testPositives,
+              })}
             </p>
             <p className="mt-3 text-ink/85">
-              The result comes from one random split of a dataset whose source and licence are not yet confirmed. It is
-              not external validation, and it has not been tested on Indian consumption data.
+              {t('landing.modelDesc2')}
             </p>
             <Button to="/app/model" variant="dark" className="mt-5" icon="arrowRight">{t('landing.seeLimitations')}</Button>
           </div>
@@ -182,9 +188,9 @@ export default function Landing() {
             <li className="border-t border-gold pt-3">{t('landing.rule2')}</li>
             <li className="border-t border-gold pt-3">{t('landing.rule3')}</li>
           </ul>
-          <div className="mt-8 flex flex-wrap items-center gap-3">
-            <Button to="/app/dashboard" variant="primary">{t('landing.openDemo')}</Button>
-            <Link to="/signin" className="text-sm underline underline-offset-2 hover:text-gold">{t('landing.signInAccount')}</Link>
+          <div className="mt-8 flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-3">
+            <Button to="/app/dashboard" variant="primary" className="w-full sm:w-auto text-center">{t('landing.openDemo')}</Button>
+            <Link to="/signin" className="text-sm underline underline-offset-2 hover:text-gold py-1">{t('landing.signInAccount')}</Link>
           </div>
         </div>
       </section>

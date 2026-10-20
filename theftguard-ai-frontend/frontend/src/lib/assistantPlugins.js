@@ -13,7 +13,7 @@
  *
  * Guarantees:
  * - Real operations executed against AppState, verified bill metrics, and database records.
- * - Zero hallucination: Never invents numbers or states actions succeeded when data is missing.
+ * - Grounded operations: Uses grounded evidence, performs calculations carefully, discloses uncertainty, and never invents results.
  * - Responsible AI phrasing: Screening scores are indicators for inspection priority, NOT proof of theft.
  * - Strict user isolation: Demo data never leaks into authenticated user workspaces.
  */

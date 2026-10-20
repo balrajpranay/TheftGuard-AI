@@ -136,9 +136,12 @@ test.describe('TheftGuard AI — Mobile Responsiveness & Multi-Viewport Verifica
 
     // Results page
     await page.goto('/app/results')
-    await expect(page.getByRole('heading', { level: 1, name: 'Results' })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: /Results|ఫలితాలు|परिणाम/i })).toBeVisible()
     let hasOverflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)
     expect(hasOverflow).toBe(false)
+
+    // Check demo indicators are present on demo records
+    await expect(page.locator('table').getByText('Demo').first()).toBeVisible()
 
     // Investigations page
     await page.goto('/app/investigations')
@@ -181,6 +184,14 @@ test.describe('TheftGuard AI — Mobile Responsiveness & Multi-Viewport Verifica
     })
     expect(chatScroll).toBe(false)
 
+    // Verify floating assistant trigger button is hidden on dedicated chat route so it never obstructs the composer
+    const floatingBtn = page.getByRole('button', { name: /Ask.*Assistant/i })
+    await expect(floatingBtn).toBeHidden()
+
+    // Trust badges verify grounded responses without zero-hallucination claims
+    await expect(page.getByText(/Grounded Responses/i).first()).toBeVisible()
+    await expect(page.getByText(/Transparent Limitations/i).first()).toBeVisible()
+
     // History drawer button on mobile
     const historyBtn = page.getByRole('button', { name: 'Toggle conversation history' })
     await expect(historyBtn).toBeVisible()
@@ -215,4 +226,59 @@ test.describe('TheftGuard AI — Mobile Responsiveness & Multi-Viewport Verifica
     const mobileHeader = page.locator('.on-dark.sticky.top-0')
     await expect(mobileHeader).toBeHidden()
   })
+
+  test('375px — Floating AI assistant button is suppressed when drawer or mobile nav is active', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 667 })
+    await page.goto('/signin')
+    await page.getByRole('button', { name: 'Continue to the demo workspace' }).click()
+    await page.waitForURL('**/app/dashboard')
+
+    // Floating trigger button is visible when drawer is closed
+    const floatingBtn = page.getByRole('button', { name: /Ask.*Assistant/i })
+    await expect(floatingBtn).toBeVisible()
+
+    // Open mobile nav menu
+    const openNavBtn = page.getByRole('button', { name: 'Open navigation' })
+    await openNavBtn.click()
+    await expect(page.getByRole('dialog', { name: 'Mobile navigation' })).toBeVisible()
+
+    // Floating trigger must be hidden while menu is open
+    await expect(floatingBtn).toBeHidden()
+
+    // Close mobile nav
+    await page.getByRole('button', { name: 'Close navigation' }).click()
+    await expect(floatingBtn).toBeVisible()
+
+    // Open assistant drawer
+    await floatingBtn.click()
+    await expect(page.getByRole('dialog', { name: /AI Bill Assistant/i })).toBeVisible()
+
+    // Floating trigger must remain hidden while drawer is open
+    await expect(floatingBtn).toBeHidden()
+
+    // Close assistant drawer
+    await page.getByRole('button', { name: 'Close assistant' }).click()
+    await expect(floatingBtn).toBeVisible()
+  })
+
+  const OVERFLOW_WIDTHS = [320, 375, 390, 430]
+  for (const w of OVERFLOW_WIDTHS) {
+    test(`Landing page — Zero horizontal overflow at ${w}px across EN, HI, TE`, async ({ page }) => {
+      await page.setViewportSize({ width: w, height: 750 })
+      await page.goto('/')
+
+      for (const lang of ['en', 'hi', 'te']) {
+        await page.evaluate((l) => {
+          localStorage.setItem('theftguard_lang', l)
+        }, lang)
+        await page.reload()
+        await page.waitForLoadState('domcontentloaded')
+
+        const hasOverflow = await page.evaluate(() => {
+          return document.documentElement.scrollWidth > document.documentElement.clientWidth
+        })
+        expect(hasOverflow).toBe(false)
+      }
+    })
+  }
 })

@@ -4,6 +4,7 @@ import { Badge, Button, CategoryBadge, DemoBadge, EmptyState, Field, inputClass,
 import Drawer from '../components/Drawer'
 import Icon from '../components/Icon'
 import { useAppState } from '../state/AppState'
+import { useLanguage } from '../context/LanguageContext'
 import { CATEGORIES, classify, DEFAULT_THRESHOLDS, MODEL_DEFAULT_THRESHOLD } from '../lib/risk'
 import { downloadCsv } from '../lib/exportCsv'
 import { FEATURE_NAMES } from '../data/features'
@@ -17,6 +18,7 @@ const SORTS = {
 
 export default function Results() {
   const { customers, source, uploaded, hasScores, thresholds, setThresholds, addInvestigation } = useAppState()
+  const { language, t } = useLanguage()
   const [params] = useSearchParams()
   const [q, setQ] = useState(params.get('q') || '')
   const [cat, setCat] = useState('all')
@@ -146,61 +148,59 @@ export default function Results() {
   return (
     <>
       <PageHeader
-        title="Results"
+        title={t('results.title')}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             {batchId ? <Badge tone="ok">Database Batch: {batchId.slice(0, 8)}</Badge> : null}
             <Button icon="download" onClick={exportCsv} disabled={rows.length === 0}>
-              Export CSV ({rows.length})
+              {t('results.exportCsv')} ({rows.length})
             </Button>
           </div>
         }
       >
         {source === 'demo'
-          ? 'Demonstration customers with invented Model Scores.'
+          ? t('results.subtitleDemo')
           : uploaded?.fileName
-            ? `Rows from ${uploaded.fileName}.`
-            : 'Authenticated workspace.'}{' '}
+            ? t('results.subtitleFile', { fileName: uploaded.fileName })
+            : t('results.subtitleAuth')}{' '}
         Search, filter and open a customer for detail.
       </PageHeader>
 
       {source === 'demo' ? (
-        <Notice tone="info" title="Demonstration scores" className="mb-4">
-          <DemoBadge /> These Model Scores were generated for the demo and did not come from the model.
+        <Notice tone="info" title={t('results.demoNoticeTitle')} className="mb-4">
+          <DemoBadge /> {t('results.demoNoticeText')}
         </Notice>
       ) : customers.length === 0 ? null : allUnscored ? (
-        <Notice tone="warn" title="These rows are not scored" className="mb-4">
-          These rows were previewed without scoring. Model Scores and categories are unavailable for your file.{' '}
+        <Notice tone="warn" title={t('results.unscoredNoticeTitle')} className="mb-4">
+          {t('results.unscoredNoticeText')}{' '}
           <Link to="/app/screening" className="underline underline-offset-2">Back to screening</Link> to run ML scoring.
         </Notice>
       ) : (
-        <Notice tone="info" title="ML Model Screening Results" className="mb-4">
-          Rows evaluated with the TheftGuard AI Random Forest model pipeline. Model Score is the uncalibrated vote fraction
-          for class 1 and is not a probability. Scores in the Review Recommended band indicate consumption patterns resembling
-          dataset labels, not confirmed theft.
+        <Notice tone="info" title={t('results.mlNoticeTitle')} className="mb-4">
+          {t('results.mlNoticeText')}
         </Notice>
       )}
 
       <Panel bodyClassName="p-0">
         <div className="grid gap-3 border-b border-line p-4 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_auto]">
-          <Field label="Search customers" htmlFor="search">
+          <Field label={t('results.searchLabel')} htmlFor="search">
             <div className="relative">
               <Icon name="search" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-              <input id="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Customer reference" className={`${inputClass} pl-9`} />
+              <input id="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('results.searchPlaceholder')} className={`${inputClass} pl-9`} />
             </div>
           </Field>
-          <Field label="Category" htmlFor="cat">
+          <Field label={t('results.categoryLabel')} htmlFor="cat">
             <select id="cat" value={cat} onChange={(e) => setCat(e.target.value)} className={inputClass}>
               <option value="all">All categories</option>
               {Object.values(CATEGORIES).map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
             </select>
           </Field>
-          <Field label="Sort by" htmlFor="sort">
+          <Field label={t('results.sortByLabel')} htmlFor="sort">
             <select id="sort" value={sort} onChange={(e) => setSort(e.target.value)} className={inputClass}>
               {Object.entries(SORTS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
           </Field>
-          <Field label="Rows" htmlFor="size">
+          <Field label={t('results.rowsLabel')} htmlFor="size">
             <select id="size" value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))} className={inputClass}>
               {[10, 25, 50].map((n) => <option key={n} value={n}>{n}</option>)}
             </select>
@@ -210,10 +210,10 @@ export default function Results() {
         {customers.length === 0 ? (
           <div className="p-6">
             <EmptyState
-              title="No screening records loaded"
-              action={<Button to="/app/screening" variant="primary">Screen a file</Button>}
+              title={t('results.emptyTitle')}
+              action={<Button to="/app/screening" variant="primary">{t('results.screenFileAction')}</Button>}
             >
-              No customer rows are currently loaded in this workspace. Upload a CSV file in Screening to generate Model Scores.
+              {t('results.emptyDesc')}
             </EmptyState>
           </div>
         ) : rows.length === 0 ? (
@@ -240,7 +240,14 @@ export default function Results() {
                 {slice.map((c) => (
                   <tr key={c.id} className="border-b border-line last:border-0 hover:bg-pale/50">
                     <th scope="row" className="px-4 py-2.5 font-medium">
-                      <button type="button" onClick={() => setSelected(c)} className="underline-offset-2 hover:underline">{c.id}</button>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <button type="button" onClick={() => setSelected(c)} className="underline-offset-2 hover:underline cursor-pointer">{c.id}</button>
+                        {(c.isDemo || source === 'demo') && (
+                          <span className="rounded bg-mist px-1.5 py-0.2 text-[10px] font-medium text-muted border border-line" data-testid="demo-record-badge">
+                            Demo
+                          </span>
+                        )}
+                      </div>
                     </th>
                     <td className="px-4 py-2.5 text-muted">{c.group}</td>
                     <td className="px-4 py-2.5 font-medium">
@@ -326,7 +333,7 @@ export default function Results() {
                         {selected.label_name}
                       </span>
                     ) : null}
-                    {selected.isDemo ? <DemoBadge>Demonstration value</DemoBadge> : null}
+                    {(selected.isDemo || source === 'demo') ? <DemoBadge>Demonstration data</DemoBadge> : null}
                   </>
                 )}
               </div>

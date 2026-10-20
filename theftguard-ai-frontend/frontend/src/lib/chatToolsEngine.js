@@ -2,7 +2,7 @@
  * TheftGuard AI — Grounded Application Tools Engine
  *
  * Connects the AI Chat Workspace to real application workflows and verified bill data.
- * Zero-Hallucination Guarantee:
+ * Grounded Guarantee with Transparent Limitations:
  * - Tools NEVER invent metrics or claim an action succeeded when data is missing.
  * - When data is missing, tools return actionable guidance and navigation links.
  */

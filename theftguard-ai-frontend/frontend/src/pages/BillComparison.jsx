@@ -34,6 +34,7 @@ import {
   synthesizeAnalysis,
 } from '../lib/householdQuestionnaire'
 import { useAppState } from '../state/AppState'
+import { useLanguage } from '../context/LanguageContext'
 
 const GOLD = '#F4C430'
 const INK = '#0F0F0F'
@@ -41,6 +42,7 @@ const MIST = '#E6E8EC'
 const AXIS = { fontSize: 12, fill: '#565B63' }
 
 export default function BillComparison() {
+  const { language, t } = useLanguage()
   const {
     addInvestigation,
     dbConnected,
@@ -394,11 +396,11 @@ export default function BillComparison() {
   return (
     <>
       <PageHeader
-        title="Household Bill Comparison"
+        title={t('billComparison.title')}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <Button onClick={() => setAssistantOpen(true)} icon="model" variant="primary">
-              Ask AI Assistant
+              {t('assistantDrawer.askAssistant')}
             </Button>
             <Button onClick={handleLoadDemo} icon="file">
               Load Telangana sample bills (Demo)
@@ -412,8 +414,7 @@ export default function BillComparison() {
           </div>
         }
       >
-        Compare two consecutive electricity bills side-by-side. Inspect changes in billed consumption (kWh),
-        billing-period duration, daily consumption rates (kWh/day), and total bill amounts (₹).
+        {t('billComparison.subtitle')}
       </PageHeader>
 
       {/* Privacy Notice Banner */}
