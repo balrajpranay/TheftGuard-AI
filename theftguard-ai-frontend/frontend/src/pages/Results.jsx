@@ -156,7 +156,11 @@ export default function Results() {
           </div>
         }
       >
-        {source === 'demo' ? 'Demonstration customers with invented Model Scores.' : `Rows from ${uploaded?.fileName}.`}{' '}
+        {source === 'demo'
+          ? 'Demonstration customers with invented Model Scores.'
+          : uploaded?.fileName
+            ? `Rows from ${uploaded.fileName}.`
+            : 'Authenticated workspace.'}{' '}
         Search, filter and open a customer for detail.
       </PageHeader>
 
@@ -164,7 +168,7 @@ export default function Results() {
         <Notice tone="info" title="Demonstration scores" className="mb-4">
           <DemoBadge /> These Model Scores were generated for the demo and did not come from the model.
         </Notice>
-      ) : allUnscored ? (
+      ) : customers.length === 0 ? null : allUnscored ? (
         <Notice tone="warn" title="These rows are not scored" className="mb-4">
           These rows were previewed without scoring. Model Scores and categories are unavailable for your file.{' '}
           <Link to="/app/screening" className="underline underline-offset-2">Back to screening</Link> to run ML scoring.
@@ -203,7 +207,16 @@ export default function Results() {
           </Field>
         </div>
 
-        {rows.length === 0 ? (
+        {customers.length === 0 ? (
+          <div className="p-6">
+            <EmptyState
+              title="No screening records loaded"
+              action={<Button to="/app/screening" variant="primary">Screen a file</Button>}
+            >
+              No customer rows are currently loaded in this workspace. Upload a CSV file in Screening to generate Model Scores.
+            </EmptyState>
+          </div>
+        ) : rows.length === 0 ? (
           <div className="p-6">
             <EmptyState title="No customers match" action={<Button onClick={() => { setQ(''); setCat('all') }}>Clear search and filters</Button>}>
               Try a different reference, or choose All categories.

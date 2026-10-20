@@ -19,6 +19,7 @@ from .repositories import (
     DuplicateInvestigationError,
     InvestigationRepository,
     RepositoryError,
+    ResourceNotFoundError,
 )
 from .schemas import (
     ORIGIN_MAPPING,
@@ -53,6 +54,7 @@ __all__ = [
     "BillExtractionRepository",
     "RepositoryError",
     "DuplicateInvestigationError",
+    "ResourceNotFoundError",
     "ORIGIN_MAPPING",
     "normalize_origin",
     "ScreeningRecordCreate",

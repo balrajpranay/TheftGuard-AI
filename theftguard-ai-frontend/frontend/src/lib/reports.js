@@ -10,6 +10,7 @@ export function getReportContext({ source, hasScores, uploaded, comparison }) {
   const isDemo = source === 'demo'
   const isScoredUpload = source === 'uploaded' && Boolean(hasScores)
   const isUnscoredUpload = source === 'uploaded' && !hasScores
+  const isEmptyWorkspace = !isDemo && source !== 'uploaded'
 
   // Real comparison data exists only when a real consumption file (not synthetic demo data) is loaded with rows
   const hasRealComparison = Boolean(
@@ -39,18 +40,24 @@ export function getReportContext({ source, hasScores, uploaded, comparison }) {
     bannerText = `ML-Scored Dataset (${name}): Customer rows evaluated with the TheftGuard AI model pipeline. Model Scores rank records for review and are not proof of electricity theft.`
     sidebarTitle = 'ML-scored dataset'
     sidebarText = `Report is generated from ${name} using actual predictions from the ML model pipeline.`
-  } else {
+  } else if (isUnscoredUpload) {
     bannerType = 'unscored'
     const name = uploaded?.fileName || 'Uploaded file'
     bannerText = `Preview without scoring (${name}): Customer rows were previewed without running ML model scoring. Model Scores and review categories are unavailable.`
     sidebarTitle = 'Unscored file'
     sidebarText = `Rows from ${name} were previewed without running ML model scoring.`
+  } else {
+    bannerType = 'empty'
+    bannerText = 'Authenticated workspace: no screening records loaded. Screen a dataset to generate an investigation report.'
+    sidebarTitle = 'Workspace empty'
+    sidebarText = 'Screen customer records in Screening to generate a complete report.'
   }
 
   return {
     isDemo,
     isScoredUpload,
     isUnscoredUpload,
+    isEmptyWorkspace,
     hasRealComparison,
     showComparisonData,
     bannerType,

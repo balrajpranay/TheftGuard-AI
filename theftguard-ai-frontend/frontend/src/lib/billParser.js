@@ -63,8 +63,32 @@ function extractDiscom(text) {
   if (/BESCOM|BANGALORE ELECTRICITY/i.test(text)) {
     return 'BESCOM (Karnataka)'
   }
-  if (/MAHADISCOM|MSEDCL/i.test(text)) {
+  if (/MAHADISCOM|MSEDCL|MAHAVITARAN|MAHARASHTRA\s*STATE\s*ELECTRICITY/i.test(text)) {
     return 'MSEDCL (Maharashtra)'
+  }
+  if (/TANGEDCO|TNEB|TAMIL\s*NADU\s*ELECTRICITY/i.test(text)) {
+    return 'TANGEDCO (Tamil Nadu)'
+  }
+  if (/UPPCL|PVVNL|MVVNL|DVVNL|PuVVNL|UTTAR\s*PRADESH\s*POWER/i.test(text)) {
+    return 'UPPCL (Uttar Pradesh)'
+  }
+  if (/BSES|BRPL|BYPL|TPDDL|TATA\s*POWER\s*DELHI/i.test(text)) {
+    return 'Delhi DISCOM (BSES / TPDDL)'
+  }
+  if (/APEPDCL|APSPDCL|APCPDCL|ANDHRA\s*PRADESH/i.test(text)) {
+    return 'Andhra Pradesh DISCOM'
+  }
+  if (/PSPCL|PUNJAB\s*STATE\s*POWER/i.test(text)) {
+    return 'PSPCL (Punjab)'
+  }
+  if (/DHBVN|UHBVN|HARYANA/i.test(text)) {
+    return 'Haryana DISCOM (DHBVN/UHBVN)'
+  }
+  if (/KSEB|KERALA\s*STATE\s*ELECTRICITY/i.test(text)) {
+    return 'KSEB (Kerala)'
+  }
+  if (/WBSEDCL|WEST\s*BENGAL|CESC\b/i.test(text)) {
+    return 'West Bengal / CESC'
   }
   return ''
 }
@@ -90,7 +114,7 @@ function extractConsumerNumber(text, lines, warnings) {
       continue
     }
 
-    const m = line.match(/(?:Consumer\s*(?:No|Number)?|Service\s*(?:No|Number)|SC\s*NO|CANO|Account\s*No)[^0-9\na-zA-Z]{0,10}([0-9]{6,16})\b/i)
+    const m = line.match(/(?:Consumer\s*(?:No|Number|ID)?|Service\s*(?:No|Number)|SC\s*NO|CANO|CA\s*Number|Account\s*(?:No|Number|ID)|K\s*No)[^0-9\na-zA-Z]{0,10}([0-9]{6,16})\b/i)
     if (m) {
       candidates.push(m[1])
     }
@@ -210,12 +234,12 @@ export function extractNumbersWithCommas(str) {
  */
 function parseTableColumns(headerText) {
   const columnDefs = [
-    { key: 'desc', pattern: /(?:Description|Meter\s*(?:No|Number|\.?)|Particulars)/i },
-    { key: 'prev', pattern: /(?:Prev(?:ious)?\s*(?:Reading|Rdg)?|Old\s*(?:Reading|Rdg)|Pr\s*Rdg)/i },
-    { key: 'curr', pattern: /(?:Pres(?:ent)?\s*(?:Reading|Rdg)?|Curr(?:ent)?\s*(?:Reading|Rdg)?|New\s*(?:Reading|Rdg))/i },
-    { key: 'diff', pattern: /(?:Diff(?:erence)?|Net\s*Reading)/i },
-    { key: 'mf', pattern: /(?:Meter\s*Multiplier|Multiplier|\bMF\b)/i },
-    { key: 'units', pattern: /(?:Units\s*Consumed|Total\s*Units|Billed\s*Units|\bUnits\b)/i },
+    { key: 'desc', pattern: /(?:Description|Meter\s*(?:No|Number|\.?)|Particulars|Serial\s*(?:No|Number|\.?)|Mtr\s*(?:No|Number|\.?))/i },
+    { key: 'prev', pattern: /(?:Prev(?:ious)?\s*(?:Reading|Rdg|Mtr\s*Rdg)?|Old\s*(?:Reading|Rdg)|Pr\s*Rdg|Initial\s*Reading|Last\s*Reading|Prev\b)/i },
+    { key: 'curr', pattern: /(?:Pres(?:ent)?\s*(?:Reading|Rdg|Mtr\s*Rdg)?|Curr(?:ent)?\s*(?:Reading|Rdg|Mtr\s*Rdg)?|New\s*(?:Reading|Rdg)|Final\s*Reading|Pres\b|Curr\b)/i },
+    { key: 'diff', pattern: /(?:Diff(?:erence)?|Net\s*Reading|Difference\s*Units)/i },
+    { key: 'mf', pattern: /(?:Meter\s*Multiplier|Multiplier|\bMF\b|M\.F\.)/i },
+    { key: 'units', pattern: /(?:Units\s*Consumed|Consumed\s*Units|Total\s*Units|Billed\s*Units|Billed\s*Consumption|Total\s*Consumption|Net\s*Units|\bUnits\b)/i },
   ]
 
   const found = []
@@ -239,7 +263,7 @@ function extractMeterReadingsAndUnits(text, lines, warnings) {
   let currentReading = ''
   let unitsConsumed = ''
 
-  const mtrIdx = lines.findIndex((l) => /Meter\s*Reading\s*Details|Reading\s*Details/i.test(l))
+  const mtrIdx = lines.findIndex((l) => /Meter\s*Reading\s*Details|Reading\s*Details|Meter\s*Details/i.test(l))
   const searchStart = mtrIdx !== -1 ? mtrIdx : 0
   const searchEnd = mtrIdx !== -1 ? Math.min(lines.length, mtrIdx + 16) : lines.length
 
@@ -254,7 +278,7 @@ function extractMeterReadingsAndUnits(text, lines, warnings) {
     const nums = extractNumbersWithCommas(l)
     if (nums.length < 2) continue
 
-    if (/(?:Energy\s*[({[/]?\s*k?Wh\s*[)}\]]?|Energy\s*k?Wh\b|^\s*kWh\b)/i.test(l)) {
+    if (/(?:(?:Active\s*)?Energy\s*[({[/]?\s*(?:k?Wh|Units?)\s*[)}\]]?|(?:Active\s*)?Energy\s*k?Wh\b|\bkWh\b|\bKWH\b|Billed\s*Units|Consumption)/i.test(l)) {
       targetRow = l
       targetRowIdx = i
       break
@@ -273,7 +297,7 @@ function extractMeterReadingsAndUnits(text, lines, warnings) {
     for (let i = 0; i < lines.length; i++) {
       const l = lines[i]
       if (/Energy\s*Charges|Fixed\s*Charges|Electricity\s*Duty/i.test(l)) continue
-      if (/(?:Energy\s*[({[/]?\s*k?Wh\s*[)}\]]?|Energy\s*k?Wh\b)/i.test(l)) {
+      if (/(?:(?:Active\s*)?Energy\s*[({[/]?\s*(?:k?Wh|Units?)\s*[)}\]]?|(?:Active\s*)?Energy\s*k?Wh\b)/i.test(l)) {
         const nums = extractNumbersWithCommas(l)
         if (nums.length >= 2) {
           targetRow = l
@@ -335,29 +359,45 @@ function extractMeterReadingsAndUnits(text, lines, warnings) {
 
   // 2. Labeled field fallback (for spot billing receipts or individual labels)
   if (!previousReading) {
-    const prevMatch = text.match(/(?:Previous\s*Reading|Prev\s*Rdg|Old\s*Reading|Pr\s*Rdg)[\s.:=-]*([0-9]{1,3}(?:,[0-9]{2,3})+(?:\.[0-9]+)?|[0-9]+(?:\.[0-9]+)?)/i)
+    const prevMatch = text.match(/(?:Previous\s*(?:Meter\s*)?Reading|Prev\s*(?:Mtr\s*)?Rdg|Old\s*(?:Meter\s*)?Reading|Old\s*Rdg|Pr\s*Rdg|Initial\s*Reading|Last\s*Reading|Previous\s*Index)[\s.:=+\-~_]*([0-9]{1,3}(?:,[0-9]{2,3})+(?:\.[0-9]+)?|[0-9]+(?:\.[0-9]+)?)/i)
     if (prevMatch) previousReading = prevMatch[1].trim()
   }
 
   if (!currentReading) {
-    const presMatch = text.match(/(?:Present\s*Reading|Current\s*Reading|Pres\s*Rdg|Curr\s*Rdg|New\s*Reading)[\s.:=-]*([0-9]{1,3}(?:,[0-9]{2,3})+(?:\.[0-9]+)?|[0-9]+(?:\.[0-9]+)?)/i)
+    const presMatch = text.match(/(?:Present\s*(?:Meter\s*)?Reading|Current\s*(?:Meter\s*)?Reading|Pres\s*(?:Mtr\s*)?Rdg|Curr\s*(?:Mtr\s*)?Rdg|New\s*(?:Meter\s*)?Reading|New\s*Rdg|Final\s*Reading|Present\s*Index|Current\s*Index)[\s.:=+\-~_]*([0-9]{1,3}(?:,[0-9]{2,3})+(?:\.[0-9]+)?|[0-9]+(?:\.[0-9]+)?)/i)
     if (presMatch) currentReading = presMatch[1].trim()
   }
 
   if (!unitsConsumed) {
-    const unitsMatch = text.match(/(?:Units\s*Consumed|Billed\s*Units|Total\s*Units|Units\s*Billed)[\s.:=-]*([0-9]{1,3}(?:,[0-9]{2,3})+(?:\.[0-9]+)?|[0-9]+(?:\.[0-9]+)?)/i)
+    const unitsRegex = /(?:Total\s*Billed\s*Units|Billed\s*Units\s*(?:\(kWh\)|in\s*kWh)?|Units\s*Consumed\s*(?:\(kWh\)|in\s*kWh)?|Consumed\s*Units\s*(?:\(kWh\)|in\s*kWh)?|Total\s*(?:Units\s*)?Consumed|Units\s*Billed\s*(?:\(kWh\))?|Total\s*Units|Total\s*Energy\s*(?:Consumed|Billed)?\s*(?:\(kWh\)|in\s*kWh)?|Billed\s*Consumption|Total\s*Consumption|Consumption\s*(?:in\s*kWh|\(kWh\)|in\s*Units)?|Recorded\s*Units|Assessed\s*Units|Net\s*Units|Units\s*(?:\(kWh\))?|Billed\s*kWh|Total\s*kWh|\bUnits\b)[\s.:=+\-~_]*([0-9]{1,3}(?:,[0-9]{2,3})+(?:\.[0-9]+)?|[0-9]+(?:\.[0-9]+)?)/i
+    const unitsMatch = text.match(unitsRegex)
     if (unitsMatch) {
       unitsConsumed = unitsMatch[1].trim()
     } else {
-      // Check for standalone Energy (kWh) : 270 line
-      for (const line of lines) {
-        if (/Energy\s*Charges/i.test(line)) continue
-        const m = line.match(/(?:Energy\s*[({[/]?\s*k?Wh\s*[)}\]]?|Energy\s*k?Wh)[\s.:=-]+([0-9]+(?:\.[0-9]+)?)\b/i)
-        if (m) {
-          const numsOnLine = extractNumbersWithCommas(line)
-          if (numsOnLine.length === 1) {
-            unitsConsumed = m[1].trim()
+      // Check multiline: Label on line N, number on line N+1
+      for (let i = 0; i < lines.length - 1; i++) {
+        const line = lines[i]
+        if (/(?:Units\s*Consumed|Consumed\s*Units|Billed\s*Units|Total\s*Units|Billed\s*Consumption|Total\s*Consumption|Consumption|Total\s*Billed\s*Units)(?:\s*(?:\(kWh\)|in\s*kWh|in\s*Units))?[\s.:=+\-~_]*$/i.test(line.trim())) {
+          const nextLine = lines[i + 1].trim()
+          const m = nextLine.match(/^(?:(?:RS\.?|INR|₹)\s*)?([0-9]{1,3}(?:,[0-9]{2,3})*(?:\.[0-9]+)?|[0-9]+(?:\.[0-9]+)?)(?:\s*(?:kWh|units?))?$/i)
+          if (m) {
+            unitsConsumed = m[1]
             break
+          }
+        }
+      }
+
+      // Check for standalone Energy (kWh) : 270 line
+      if (!unitsConsumed) {
+        for (const line of lines) {
+          if (/Energy\s*Charges/i.test(line)) continue
+          const m = line.match(/(?:Energy\s*[({[/]?\s*k?Wh\s*[)}\]]?|Energy\s*k?Wh)[\s.:=-]+([0-9]{1,3}(?:,[0-9]{2,3})+(?:\.[0-9]+)?|[0-9]+(?:\.[0-9]+)?)\b/i)
+          if (m) {
+            const numsOnLine = extractNumbersWithCommas(line)
+            if (numsOnLine.length === 1) {
+              unitsConsumed = m[1].trim()
+              break
+            }
           }
         }
       }
@@ -382,11 +422,7 @@ function extractMeterReadingsAndUnits(text, lines, warnings) {
  */
 function extractAmountPayable(text, lines, warnings) {
   // 1. High-priority targeted pattern:
-  // "Total Amount Payable (Rounded) : Rs. 1365.00"
-  // "Total Amount Payable : 1365.00"
-  // "Net Amount Payable (Rounded) : 1365.00"
-  // "Net Amount Payable : 1365.00"
-  const payableRegex = /(?:Total\s*(?:Amount|Amt)\s*Payable\s*(?:\(Rounded\))?|Net\s*(?:Amount|Amt)\s*Payable\s*(?:\(Rounded\))?|Total\s*Payable\s*(?:\(Rounded\))?|Amount\s*Payable\s*by\s*Due\s*Date)[\s.:=+\-~_]*(?:RS\.?|INR|₹)?\s*([0-9]+(?:,[0-9]{3})*(?:\.[0-9]{1,2})?)/i
+  const payableRegex = /(?:Total\s*(?:Amount|Amt)\s*Payable\s*(?:\(Rounded\))?|Net\s*(?:Amount|Amt)\s*Payable\s*(?:\(Rounded\))?|Amount\s*Payable\s*(?:\(Rounded\))?|Amount\s*Payable\s*by\s*Due\s*Date|Amount\s*Payable|Payable\s*Amount\s*(?:\(Rounded\))?|Payable\s*Amount|Amount\s*to\s*(?:be\s*)?Paid|Net\s*Amount\s*to\s*Pay|Total\s*(?:Bill\s*)?(?:Amount|Amt)|Net\s*(?:Bill\s*)?(?:Amount|Amt)|Total\s*Payable\s*(?:\(Rounded\))?|Net\s*Payable|Total\s*Due|Net\s*Due|Bill\s*Amount|Tot\s*Amt(?:\s*Payable)?|Total\s*Dues|Gross\s*Amount\s*Payable|Final\s*(?:Bill\s*)?Amount)[\s.:=+\-~_]*(?:RS\.?|INR|₹)?\s*([0-9]{1,3}(?:,[0-9]{2,3})+(?:\.[0-9]{1,2})?|[0-9]+(?:\.[0-9]{1,2})?)/i
   const match = text.match(payableRegex)
   if (match) {
     return match[1].replace(/,/g, '')
@@ -395,22 +431,23 @@ function extractAmountPayable(text, lines, warnings) {
   // 2. Multiline check: Label on line N, amount on line N+1
   for (let i = 0; i < lines.length - 1; i++) {
     const line = lines[i]
-    if (/Total\s*(?:Amount|Amt)\s*Payable|Net\s*(?:Amount|Amt)\s*Payable|Total\s*Payable/i.test(line)) {
+    if (/(?:Total\s*(?:Amount|Amt)\s*Payable|Net\s*(?:Amount|Amt)\s*Payable|Amount\s*Payable|Total\s*Payable|Bill\s*Amount|Total\s*Amount|Payable\s*Amount|Net\s*Amount|Total\s*Due)/i.test(line)) {
       if (/after\s*due\s*date/i.test(line)) continue
       const nextLine = lines[i + 1]
-      const m = nextLine.match(/(?:RS\.?|INR|₹)?\s*([0-9]+(?:,[0-9]{3})*(?:\.[0-9]{1,2})?)/i)
+      const m = nextLine.match(/(?:RS\.?|INR|₹)?\s*([0-9]{1,3}(?:,[0-9]{2,3})+(?:\.[0-9]{1,2})?|[0-9]+(?:\.[0-9]{1,2})?)/i)
       if (m && !/Date|Period|Units|Reading/i.test(nextLine)) {
         return m[1].replace(/,/g, '')
       }
     }
   }
 
-  // 3. Fallback scan avoiding subtotals and charges
+  // 3. Fallback scan avoiding subtotals and individual charges unless the line explicitly specifies total payable
   for (const line of lines) {
-    if (/Energy\s*Charges|Fixed\s*Charges|Customer\s*Charges|Electricity\s*Duty|Current\s*Month|Sub\s*Total|Arrears|Interest/i.test(line)) {
+    const isTargetedLine = /(?:Total\s*(?:Amount|Amt)\s*Payable|Net\s*(?:Amount|Amt)\s*Payable|Amount\s*Payable|Total\s*Due|Bill\s*Amount|Payable\s*Amount)/i.test(line)
+    if (!isTargetedLine && /Energy\s*Charges|Fixed\s*Charges|Customer\s*Charges|Electricity\s*Duty|Current\s*Month|Sub\s*Total|Arrears|Interest/i.test(line)) {
       continue
     }
-    const m = line.match(/(?:(?:Total\s*)?(?:Amount|Amt)\s*Payable|Total\s*Due|Bill\s*Amount)[\s.:=-]*(?:RS\.?|INR|₹)?\s*([0-9]+(?:,[0-9]{3})*(?:\.[0-9]{1,2})?)/i)
+    const m = line.match(/(?:(?:Total\s*)?(?:Amount|Amt)\s*Payable|Total\s*Due|Bill\s*Amount|Payable\s*Amount)[\s.:=-]*(?:RS\.?|INR|₹)?\s*([0-9]{1,3}(?:,[0-9]{2,3})+(?:\.[0-9]{1,2})?|[0-9]+(?:\.[0-9]{1,2})?)/i)
     if (m) {
       return m[1].replace(/,/g, '')
     }

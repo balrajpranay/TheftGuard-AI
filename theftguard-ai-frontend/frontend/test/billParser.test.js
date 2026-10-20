@@ -316,4 +316,129 @@ AMOUNT PAYABLE: 850
     assert.deepEqual(extractNumbersWithCommas(''), [])
     assert.deepEqual(extractNumbersWithCommas(null), [])
   })
+
+  it('correctly extracts amounts with alternative labels (Amount Payable, Bill Amount, Tot Amt)', () => {
+    const ocr1 = `
+TSSPDCL
+USCNO: 100458921
+Bill Issue Date: 02-08-2026
+Units Consumed: 245
+Amount Payable : Rs. 3,447.50
+`
+    const res1 = parseBillText(ocr1)
+    assert.equal(res1.fields.amountPayable, '3447.50')
+    assert.equal(res1.fields.unitsConsumed, '245')
+
+    const ocr2 = `
+TGSPDCL
+USCNO: 100458921
+Bill Issue Date: 02-07-2026
+Units: 220
+Bill Amount: 1480.00
+`
+    const res2 = parseBillText(ocr2)
+    assert.equal(res2.fields.amountPayable, '1480.00')
+    assert.equal(res2.fields.unitsConsumed, '220')
+
+    const ocr3 = `
+TSNPDCL
+USCNO: 100458921
+Bill Issue Date: 02-09-2026
+Consumed Units: 310
+Tot Amt : 2850.00
+`
+    const res3 = parseBillText(ocr3)
+    assert.equal(res3.fields.amountPayable, '2850.00')
+    assert.equal(res3.fields.unitsConsumed, '310')
+  })
+
+  it('correctly extracts units when formatted as Consumption (kWh) or across multiline labels', () => {
+    const ocrMultiline = `
+TSSPDCL
+USCNO: 100458921
+Units Consumed
+285
+Total Amount Payable: 2150.00
+`
+    const res = parseBillText(ocrMultiline)
+    assert.equal(res.fields.unitsConsumed, '285')
+    assert.equal(res.fields.amountPayable, '2150.00')
+  })
+
+  it('correctly extracts Karnataka BESCOM bill layout with Account ID, readings, and units', () => {
+    const rawBescom = `
+BANGALORE ELECTRICITY SUPPLY COMPANY LIMITED (BESCOM)
+ELECTRICITY BILL FOR LT CONSUMERS
+Account ID: 9876543210
+Bill Date: 05-08-2026
+Bill Period: 01-07-2026 to 31-07-2026
+Billing Days: 31
+Meter Rdg Details:
+Initial Reading: 12400
+Final Reading: 12690
+Units Consumed: 290 kWh
+Net Amount Payable: Rs. 2,145.00
+`
+    const res = parseBillText(rawBescom)
+    assert.equal(res.fields.discom, 'BESCOM (Karnataka)')
+    assert.equal(res.fields.consumerNumber, '9876543210')
+    assert.equal(res.fields.previousReading, '12400')
+    assert.equal(res.fields.currentReading, '12690')
+    assert.equal(res.fields.unitsConsumed, '290')
+    assert.equal(res.fields.amountPayable, '2145.00')
+    assert.equal(res.fields.billingDays, '31')
+  })
+
+  it('correctly extracts Maharashtra MSEDCL (Mahavitaran) bill layout', () => {
+    const rawMsedcl = `
+MAHARASHTRA STATE ELECTRICITY DISTRIBUTION CO. LTD.
+MAHAVITARAN
+Consumer No: 021548796321
+Bill Issue Date: 10/08/2026
+Billing Period: 08/07/2026 to 08/08/2026
+Billing Days: 31
+Pres Rdg: 8940
+Prev Rdg: 8710
+Total Billed Units: 230
+Total Amount Payable (Rounded): Rs. 1,680.00
+`
+    const res = parseBillText(rawMsedcl)
+    assert.equal(res.fields.discom, 'MSEDCL (Maharashtra)')
+    assert.equal(res.fields.consumerNumber, '021548796321')
+    assert.equal(res.fields.previousReading, '8710')
+    assert.equal(res.fields.currentReading, '8940')
+    assert.equal(res.fields.unitsConsumed, '230')
+    assert.equal(res.fields.amountPayable, '1680.00')
+    assert.equal(res.fields.billingDays, '31')
+  })
+
+  it('strictly adheres to zero-inference: missing meter readings are never computed by arithmetic subtraction', () => {
+    const ocrWithoutPrev = `
+TSSPDCL
+USCNO: 100458921
+Bill Date: 02/08/2026
+Units Consumed: 245
+Current Reading: 14525
+Net Amount Payable: 1725.00
+`
+    const res = parseBillText(ocrWithoutPrev)
+    assert.equal(res.fields.currentReading, '14525')
+    assert.equal(res.fields.unitsConsumed, '245')
+    // Must NOT infer previous reading 14525 - 245 = 14280
+    assert.equal(res.fields.previousReading, '')
+
+    const ocrWithoutUnits = `
+TSSPDCL
+USCNO: 100458921
+Bill Date: 02/08/2026
+Previous Reading: 14280
+Current Reading: 14525
+Net Amount Payable: 1725.00
+`
+    const res2 = parseBillText(ocrWithoutUnits)
+    assert.equal(res2.fields.previousReading, '14280')
+    assert.equal(res2.fields.currentReading, '14525')
+    // Must NOT infer units 14525 - 14280 = 245
+    assert.equal(res2.fields.unitsConsumed, '')
+  })
 })

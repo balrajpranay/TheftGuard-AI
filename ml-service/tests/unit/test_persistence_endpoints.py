@@ -62,7 +62,18 @@ def override_get_db():
         session.close()
 
 
-app.dependency_overrides[get_db] = override_get_db
+from service.auth import AuthenticatedUser, get_current_user
+
+TEST_USER_ID = uuid.UUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+TEST_USER = AuthenticatedUser(
+    user_id=TEST_USER_ID,
+    email="test@theftguard.ai",
+    role="authenticated",
+)
+
+
+def override_get_current_user():
+    return TEST_USER
 
 
 def request_endpoint(
@@ -119,9 +130,12 @@ class PersistenceEndpointTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         Base.metadata.create_all(test_engine)
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_user] = override_get_current_user
 
     @classmethod
     def tearDownClass(cls):
+        app.dependency_overrides.clear()
         test_engine.dispose()
 
     def tearDown(self):
@@ -204,6 +218,23 @@ class PersistenceEndpointTests(unittest.TestCase):
         self.assertEqual(status_code, 404)
         self.assertEqual(data.get("error", {}).get("code"), "not_found")
 
+    def test_delete_batch(self):
+        """Verify DELETE /v1/batches/{batch_id} deletes the batch and returns 404 on subsequent get."""
+        payload = {
+            "file_name": "delete_test.csv",
+            "model_sha256": "dummy_sha256",
+        }
+        st, data = request_endpoint("POST", "/v1/batches", body=payload)
+        self.assertEqual(st, 201)
+        batch_id = data["id"]
+
+        del_st, del_data = request_endpoint("DELETE", f"/v1/batches/{batch_id}")
+        self.assertEqual(del_st, 200)
+        self.assertTrue(del_data.get("deleted"))
+
+        get_st, _ = request_endpoint("GET", f"/v1/batches/{batch_id}")
+        self.assertEqual(get_st, 404)
+
     def test_create_batch_validation_error(self):
         """Verify POST /v1/batches returns 422 on invalid threshold ordering or score out of bounds."""
         # Elevated threshold >= review threshold
@@ -274,6 +305,12 @@ class PersistenceEndpointTests(unittest.TestCase):
         status_code, get_data = request_endpoint("GET", f"/v1/investigations/{inv_id}")
         self.assertEqual(status_code, 200)
         self.assertEqual(get_data["id"], inv_id)
+
+        # 2b. Retrieve investigation by ticket code
+        status_code, ticket_data = request_endpoint("GET", f"/v1/investigations/by-ticket/INV-TEST-001")
+        self.assertEqual(status_code, 200)
+        self.assertEqual(ticket_data["id"], inv_id)
+        self.assertEqual(ticket_data["ticket_code"], "INV-TEST-001")
 
         # 3. List investigations with filter
         status_code, list_data = request_endpoint("GET", "/v1/investigations", params={"status": "New"})
@@ -474,6 +511,19 @@ class PersistenceEndpointTests(unittest.TestCase):
         self.assertEqual(status_code, 200)
         self.assertEqual(len(list_data), 1)
         self.assertEqual(list_data[0]["consumer_number"], "100458921")
+
+        # 3. Retrieve single bill extraction
+        ext_id = data["id"]
+        status_code, get_data = request_endpoint("GET", f"/v1/bill-extractions/{ext_id}")
+        self.assertEqual(status_code, 200)
+        self.assertEqual(get_data["id"], ext_id)
+        self.assertEqual(get_data["consumer_number"], "100458921")
+
+        # 4. List by consumer endpoint
+        status_code, consumer_data = request_endpoint("GET", f"/v1/bill-extractions/by-consumer/100458921")
+        self.assertEqual(status_code, 200)
+        self.assertEqual(len(consumer_data), 1)
+        self.assertEqual(consumer_data[0]["id"], ext_id)
 
     # ==========================================================================
     # 4. Existing ML Service Endpoints Verification

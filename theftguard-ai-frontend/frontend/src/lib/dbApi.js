@@ -13,6 +13,8 @@
  * - All mutations pass through server-side Pydantic v2 validation and transactional repositories.
  */
 
+import { getSessionToken } from './supabaseClient.js'
+
 const DEFAULT_TIMEOUT_MS = 30000
 
 export class DbApiError extends Error {
@@ -63,7 +65,10 @@ export function mapReviewCategory(cat, status) {
 /**
  * Base JSON request wrapper for /ml persistence endpoints.
  */
-async function requestJson(url, { method = 'GET', body = null, signal = null, timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
+async function requestJson(
+  url,
+  { method = 'GET', body = null, signal = null, timeoutMs = DEFAULT_TIMEOUT_MS, headers: customHeaders = {} } = {},
+) {
   const controller = new AbortController()
   let timedOut = false
 
@@ -80,11 +85,23 @@ async function requestJson(url, { method = 'GET', body = null, signal = null, ti
     signal.addEventListener('abort', () => controller.abort(), { once: true })
   }
 
-  const headers = { Accept: 'application/json' }
+  const headers = { Accept: 'application/json', ...customHeaders }
   let payload = null
   if (body !== null) {
     headers['Content-Type'] = 'application/json'
     payload = JSON.stringify(body)
+  }
+
+  // Attach Supabase JWT Bearer token if available and request is directed to persistence endpoints
+  if (!headers['Authorization'] && (url.startsWith('/ml/v1/') || url.startsWith('/v1/'))) {
+    try {
+      const token = await getSessionToken()
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+    } catch {
+      // Continue unauthenticated if token retrieval encounters an issue
+    }
   }
 
   try {
@@ -109,7 +126,11 @@ async function requestJson(url, { method = 'GET', body = null, signal = null, ti
 
       let message = errInfo?.message || detailMsg
       if (!message) {
-        if (res.status === 409) {
+        if (res.status === 401) {
+          message = 'Authentication required or session expired. Please sign in to access stored records.'
+        } else if (res.status === 403) {
+          message = 'You do not have permission to access or modify this record.'
+        } else if (res.status === 409) {
           message = 'A conflict occurred with an existing database record.'
         } else if (res.status === 404) {
           message = 'The requested database record was not found.'
@@ -124,15 +145,19 @@ async function requestJson(url, { method = 'GET', body = null, signal = null, ti
 
       const code =
         errInfo?.code ||
-        (res.status === 409
-          ? 'conflict'
-          : res.status === 404
-            ? 'not_found'
-            : res.status === 422
-              ? 'validation_error'
-              : res.status === 503
-                ? 'database_unavailable'
-                : `http_${res.status}`)
+        (res.status === 401
+          ? 'unauthorized'
+          : res.status === 403
+            ? 'forbidden'
+            : res.status === 409
+              ? 'conflict'
+              : res.status === 404
+                ? 'not_found'
+                : res.status === 422
+                  ? 'validation_error'
+                  : res.status === 503
+                    ? 'database_unavailable'
+                    : `http_${res.status}`)
 
       throw new DbApiError(message, {
         code,

@@ -316,6 +316,7 @@ class BillExtractionCreate(BaseModel):
     raw_previous_reading: Optional[str] = Field(default=None, max_length=32)
     raw_current_reading: Optional[str] = Field(default=None, max_length=32)
     investigation_id: Optional[uuid.UUID] = None
+    created_by: Optional[uuid.UUID] = None
 
     @model_validator(mode="after")
     def validate_period_range(self) -> BillExtractionCreate:
@@ -353,4 +354,5 @@ class BillExtractionResponse(BaseModel):
     raw_previous_reading: Optional[str] = None
     raw_current_reading: Optional[str] = None
     investigation_id: Optional[uuid.UUID] = None
+    created_by: Optional[uuid.UUID] = None
     created_at: datetime

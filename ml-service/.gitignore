@@ -15,6 +15,10 @@ ENV/
 .env.*
 !.env.example
 
+# Model artifacts
+*.joblib
+!validated_candidate_pipeline.joblib
+
 # Logs and SQLite
 *.log
 *.sqlite

@@ -580,6 +580,12 @@ class BillExtraction(Base):
         index=True,
         doc="Optional link to an investigation ticket spawned from this bill.",
     )
+    created_by: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID_TYPE,
+        nullable=True,
+        index=True,
+        doc="User UUID who created the extraction (maps to Supabase auth.users.id).",
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

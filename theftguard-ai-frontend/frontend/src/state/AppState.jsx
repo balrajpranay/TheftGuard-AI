@@ -11,9 +11,11 @@ import {
   updateInvestigation as apiUpdateInvestigation,
   DbApiError,
 } from '../lib/dbApi'
+import { createInitialSlotState, buildAssistantBillContext } from '../lib/billComparison'
+import { useAuth } from '../context/AuthContext.js'
 
 const DEMO_CUSTOMERS = buildDemoCustomers()
-export const DEFAULT_CHECKLIST = [
+const DEFAULT_CHECKLIST = [
   'Confirm the customer and meter identity',
   'Compare the meter reading with the billing record',
   'Check the meter seal and enclosure',
@@ -21,7 +23,7 @@ export const DEFAULT_CHECKLIST = [
   'Record photographs and field notes',
 ]
 
-export function normalizeInvestigation(inv) {
+function normalizeInvestigation(inv) {
   const checklist =
     Array.isArray(inv.checklist) && inv.checklist.length > 0
       ? inv.checklist
@@ -54,23 +56,102 @@ export function normalizeInvestigation(inv) {
 const Ctx = createContext(null)
 
 export function AppStateProvider({ children }) {
+  const { isAuthenticated, isDemoMode } = useAuth()
+
   // Results source: demonstration rows, or rows from an uploaded file (previewed or ML-scored).
   const [uploaded, setUploaded] = useState(null)
-  const [source, setSource] = useState('demo')
+  const [source, setSource] = useState(() => (isDemoMode ? 'demo' : 'empty'))
   const [thresholds, setThresholds] = useState(DEFAULT_THRESHOLDS)
   const [tariff, setTariff] = useState(7)
-  const [comparison, setComparison] = useState({
-    rows: buildDemoConsumption(),
-    label: 'Demonstration data (synthetic)',
-    isDemo: true,
-    splitDate: DEMO_SPLIT_DATE,
-    dropThreshold: 30,
+  const [comparison, setComparison] = useState(() => {
+    if (isDemoMode) {
+      return {
+        rows: buildDemoConsumption(),
+        label: 'Demonstration data (synthetic)',
+        isDemo: true,
+        splitDate: DEMO_SPLIT_DATE,
+        dropThreshold: 30,
+      }
+    }
+    return {
+      rows: [],
+      label: 'No consumption data loaded',
+      isDemo: false,
+      splitDate: null,
+      dropThreshold: 30,
+    }
   })
   const [investigations, setInvestigations] = useState([])
   const [dbConnected, setDbConnected] = useState(false)
   const [dbError, setDbError] = useState(null)
 
-  const customers = source === 'uploaded' && uploaded ? uploaded.customers : DEMO_CUSTOMERS
+  // Ensure workspace state is cleanly isolated between real authenticated user and demo workspace
+  useEffect(() => {
+    if (isAuthenticated && !isDemoMode) {
+      // Transitioning to real authenticated workspace: purge any residual demo state
+      setSource((prev) => (prev === 'demo' ? 'empty' : prev))
+      setComparison((prev) => {
+        if (prev.isDemo) {
+          return {
+            rows: [],
+            label: 'No consumption data loaded',
+            isDemo: false,
+            splitDate: null,
+            dropThreshold: 30,
+          }
+        }
+        return prev
+      })
+    } else if (isDemoMode) {
+      // Explicitly entering demo mode: populate synthetic demo data if empty
+      setSource((prev) => (prev === 'empty' ? 'demo' : prev))
+      setComparison((prev) => {
+        if (!prev.rows.length && !prev.isDemo) {
+          return {
+            rows: buildDemoConsumption(),
+            label: 'Demonstration data (synthetic)',
+            isDemo: true,
+            splitDate: DEMO_SPLIT_DATE,
+            dropThreshold: 30,
+          }
+        }
+        return prev
+      })
+    }
+  }, [isAuthenticated, isDemoMode])
+
+  // Household Bill Comparison & Assistant Context
+  const [billSlots, setBillSlots] = useState(() => ({
+    prev: createInitialSlotState(),
+    curr: createInitialSlotState(),
+  }))
+  const [manualBillContext, setManualBillContext] = useState(undefined)
+  const [questionnaireAnswers, setQuestionnaireAnswers] = useState(null)
+  const [assistantOpen, setAssistantOpen] = useState(false)
+
+  // Derived automatically from billSlots so context is never stale across routes or renders
+  const derivedBillContext = useMemo(() => {
+    return buildAssistantBillContext(billSlots)
+  }, [billSlots])
+
+  // activeBillContext uses manualBillContext if explicitly set, otherwise derivedBillContext
+  const activeBillContext = manualBillContext !== undefined ? manualBillContext : derivedBillContext
+  const setActiveBillContext = useCallback((val) => {
+    setManualBillContext(val)
+  }, [])
+
+  // Customers are derived strictly from uploaded records or explicit demo mode.
+  // Real authenticated workspaces NEVER inject DEMO_CUSTOMERS.
+  const customers = useMemo(() => {
+    if (source === 'uploaded' && uploaded?.customers) {
+      return uploaded.customers
+    }
+    if (isDemoMode) {
+      return DEMO_CUSTOMERS
+    }
+    return []
+  }, [source, uploaded, isDemoMode])
+
   const hasScores = source === 'uploaded' && Boolean(uploaded?.hasScores)
 
   const loadUploaded = useCallback((fileName, rows) => {
@@ -83,10 +164,25 @@ export function AppStateProvider({ children }) {
     setSource('uploaded')
   }, [])
 
-  const loadDemo = useCallback(() => setSource('demo'), [])
+  const loadDemo = useCallback(() => {
+    if (isAuthenticated && !isDemoMode) {
+      // Real authenticated user cannot switch workspace to fake demo screening
+      return
+    }
+    setSource('demo')
+  }, [isAuthenticated, isDemoMode])
 
-  // Fetch persisted investigations on mount
+  // Fetch persisted investigations when authenticated
   const refreshInvestigations = useCallback(async () => {
+    if (isDemoMode || !isAuthenticated) {
+      setDbConnected(false)
+      setDbError(null)
+      if (!isDemoMode) {
+        setInvestigations([])
+      }
+      return
+    }
+
     try {
       const data = await apiListInvestigations({ limit: 100 })
       if (Array.isArray(data)) {
@@ -95,11 +191,15 @@ export function AppStateProvider({ children }) {
         setDbError(null)
       }
     } catch (err) {
-      // Local/demo fallback if DB is not running or not configured
       setDbConnected(false)
-      setDbError(err.message || 'Database unavailable')
+      setInvestigations([]) // Do not inject demo investigations for real users
+      if (err.code !== 'unauthorized') {
+        setDbError(err.message || 'Database unavailable')
+      } else {
+        setDbError('Authentication session expired. Please sign in again.')
+      }
     }
-  }, [])
+  }, [isAuthenticated, isDemoMode])
 
   useEffect(() => {
     refreshInvestigations()
@@ -174,6 +274,17 @@ export function AppStateProvider({ children }) {
         isPersisted: false,
       }
 
+      if (isDemoMode || !isAuthenticated) {
+        setInvestigations((list) => [fallbackLocalTicket, ...list])
+        return {
+          ok: true,
+          local: true,
+          investigation: fallbackLocalTicket,
+          ticketCode: fallbackLocalTicket.ticketCode,
+          notice: 'Saved to local demo queue.',
+        }
+      }
+
       try {
         const persisted = await apiCreateInvestigation({
           customerRef,
@@ -199,18 +310,28 @@ export function AppStateProvider({ children }) {
             message: err.message || 'Conflict: an active investigation already exists.',
           }
         }
-        // If database is unavailable, fall back to in-memory state
-        setInvestigations((list) => [fallbackLocalTicket, ...list])
+        // Do not silently inject local demo tickets for authenticated users on database error
+        if (isDemoMode || !isAuthenticated) {
+          setInvestigations((list) => [fallbackLocalTicket, ...list])
+          return {
+            ok: true,
+            local: true,
+            investigation: fallbackLocalTicket,
+            ticketCode: fallbackLocalTicket.ticketCode,
+            notice: 'Saved to local demo queue.',
+          }
+        }
+        setDbConnected(false)
+        const errorMsg = err?.message || 'Database error: could not save investigation.'
+        setDbError(errorMsg)
         return {
-          ok: true,
-          local: true,
-          investigation: fallbackLocalTicket,
-          ticketCode: fallbackLocalTicket.ticketCode,
-          notice: 'Saved to local session only (database offline).',
+          ok: false,
+          error: true,
+          message: errorMsg,
         }
       }
     },
-    [investigations],
+    [investigations, isAuthenticated, isDemoMode],
   )
 
   const updateInvestigation = useCallback(
@@ -288,6 +409,14 @@ export function AppStateProvider({ children }) {
       dbConnected,
       dbError,
       refreshInvestigations,
+      billSlots,
+      setBillSlots,
+      activeBillContext,
+      setActiveBillContext,
+      questionnaireAnswers,
+      setQuestionnaireAnswers,
+      assistantOpen,
+      setAssistantOpen,
     }),
     [
       customers,
@@ -309,6 +438,10 @@ export function AppStateProvider({ children }) {
       dbConnected,
       dbError,
       refreshInvestigations,
+      billSlots,
+      activeBillContext,
+      questionnaireAnswers,
+      assistantOpen,
     ],
   )
 

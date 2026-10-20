@@ -39,14 +39,24 @@ class DuplicateInvestigationError(RepositoryError):
     pass
 
 
+class ResourceNotFoundError(RepositoryError):
+    """Raised when a referenced entity is not found or not owned by the authenticated user."""
+    pass
+
+
 class BatchRepository:
     """Repository managing screening batches and their associated records."""
 
     @staticmethod
-    def create_batch(session: Session, data: ScreeningBatchCreate) -> ScreeningBatch:
+    def create_batch(
+        session: Session,
+        data: ScreeningBatchCreate,
+        user_id: Optional[uuid.UUID] = None,
+    ) -> ScreeningBatch:
         """Create a screening batch and all its records atomically in a single transaction.
 
         If any record fails or a constraint is violated, the entire operation is rolled back.
+        If user_id is provided, server-side ownership strictly sets created_by to user_id.
         """
         try:
             # Calculate counts if records provided
@@ -54,6 +64,8 @@ class BatchRepository:
             scored = data.scored_rows or sum(1 for r in data.records if r.status == "scored")
             rejected = data.rejected_rows or sum(1 for r in data.records if r.status == "rejected")
             warning = data.warning_rows or sum(1 for r in data.records if r.warnings)
+
+            owner_id = user_id if user_id is not None else data.created_by
 
             batch = ScreeningBatch(
                 file_name=data.file_name,
@@ -68,7 +80,7 @@ class BatchRepository:
                 threshold_elevated=data.threshold_elevated,
                 threshold_review=data.threshold_review,
                 status=data.status,
-                created_by=data.created_by,
+                created_by=owner_id,
             )
             session.add(batch)
             session.flush()  # Populates batch.id
@@ -99,31 +111,56 @@ class BatchRepository:
             raise RepositoryError(f"Failed to create batch atomically: {exc}") from exc
 
     @staticmethod
-    def list_batches(session: Session, limit: int = 50, offset: int = 0) -> List[ScreeningBatch]:
-        """List historical screening batches ordered by most recent."""
-        stmt = (
-            select(ScreeningBatch)
-            .order_by(ScreeningBatch.created_at.desc())
-            .limit(limit)
-            .offset(offset)
-        )
+    def list_batches(
+        session: Session,
+        user_id: Optional[uuid.UUID] = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> List[ScreeningBatch]:
+        """List historical screening batches ordered by most recent.
+        
+        When user_id is supplied, strictly limits results to batches owned by that user.
+        Legacy unowned records (created_by IS NULL) are not returned to user queries.
+        """
+        stmt = select(ScreeningBatch).order_by(ScreeningBatch.created_at.desc())
+        if user_id is not None:
+            stmt = stmt.where(ScreeningBatch.created_by == user_id)
+        stmt = stmt.limit(limit).offset(offset)
         return list(session.scalars(stmt).all())
 
     @staticmethod
-    def get_batch(session: Session, batch_id: uuid.UUID) -> Optional[ScreeningBatch]:
-        """Fetch a single screening batch by ID without loading all child records."""
-        return session.get(ScreeningBatch, batch_id)
+    def get_batch(
+        session: Session,
+        batch_id: uuid.UUID,
+        user_id: Optional[uuid.UUID] = None,
+    ) -> Optional[ScreeningBatch]:
+        """Fetch a single screening batch by ID without loading all child records.
+        
+        Returns None if not found or if not owned by user_id.
+        """
+        batch = session.get(ScreeningBatch, batch_id)
+        if not batch:
+            return None
+        if user_id is not None and batch.created_by != user_id:
+            return None
+        return batch
 
     @staticmethod
     def get_batch_with_records(
         session: Session,
         batch_id: uuid.UUID,
+        user_id: Optional[uuid.UUID] = None,
         limit: int = 100,
         offset: int = 0,
     ) -> Optional[Tuple[ScreeningBatch, List[ScreeningRecord], int]]:
-        """Fetch a batch along with paginated child records and total record count."""
+        """Fetch a batch along with paginated child records and total record count.
+        
+        Returns None if not found or if not owned by user_id.
+        """
         batch = session.get(ScreeningBatch, batch_id)
         if not batch:
+            return None
+        if user_id is not None and batch.created_by != user_id:
             return None
 
         # Count total records in batch
@@ -142,15 +179,23 @@ class BatchRepository:
         return batch, records, total_records
 
     @staticmethod
-    def delete_batch(session: Session, batch_id: uuid.UUID) -> bool:
+    def delete_batch(
+        session: Session,
+        batch_id: uuid.UUID,
+        user_id: Optional[uuid.UUID] = None,
+    ) -> bool:
         """Delete a screening batch.
 
         Screening records cascade delete automatically.
         Associated investigations survive with batch_id and screening_record_id SET NULL.
+        Returns False if not found or if not owned by user_id.
         """
         batch = session.get(ScreeningBatch, batch_id)
         if not batch:
             return False
+        if user_id is not None and batch.created_by != user_id:
+            return False
+
         try:
             session.delete(batch)
             session.commit()
@@ -164,13 +209,32 @@ class InvestigationRepository:
     """Repository managing field investigation audit tickets."""
 
     @staticmethod
-    def create_investigation(session: Session, data: InvestigationCreate) -> Investigation:
+    def create_investigation(
+        session: Session,
+        data: InvestigationCreate,
+        user_id: Optional[uuid.UUID] = None,
+    ) -> Investigation:
         """Create a new investigation ticket.
 
-        Enforces scoped unique checks:
+        Enforces user ownership, relationship ownership, and scoped unique checks:
         1. uq_investigations_screening_record: a screening record cannot be re-attached to a second ticket.
         2. uq_investigations_active_customer_batch: customer cannot have duplicate active tickets in same batch.
         """
+        owner_id = user_id if user_id is not None else data.created_by
+
+        # Relationship ownership checks:
+        if user_id is not None:
+            if data.batch_id:
+                batch = session.get(ScreeningBatch, data.batch_id)
+                if batch and batch.created_by != user_id:
+                    raise ResourceNotFoundError(f"Screening batch '{data.batch_id}' was not found.")
+            if data.screening_record_id:
+                rec = session.get(ScreeningRecord, data.screening_record_id)
+                if rec:
+                    parent_batch = session.get(ScreeningBatch, rec.batch_id)
+                    if parent_batch and parent_batch.created_by != user_id:
+                        raise ResourceNotFoundError(f"Screening record '{data.screening_record_id}' was not found.")
+
         # Ensure unique ticket code
         ticket_code = data.ticket_code
         if not ticket_code:
@@ -193,7 +257,7 @@ class InvestigationRepository:
             evidence=data.evidence,
             screening_record_id=data.screening_record_id,
             batch_id=data.batch_id,
-            created_by=data.created_by,
+            created_by=owner_id,
         )
 
         try:
@@ -245,6 +309,9 @@ class InvestigationRepository:
 
             # Generic sanitized integrity error for foreign keys, check constraints, etc.
             raise RepositoryError("Database integrity constraint violation during investigation creation.") from exc
+        except RepositoryError:
+            session.rollback()
+            raise
         except Exception as exc:
             session.rollback()
             raise RepositoryError(f"Failed to create investigation: {exc}") from exc
@@ -252,13 +319,20 @@ class InvestigationRepository:
     @staticmethod
     def list_investigations(
         session: Session,
+        user_id: Optional[uuid.UUID] = None,
         status: Optional[str] = None,
         customer_ref: Optional[str] = None,
         limit: int = 100,
         offset: int = 0,
     ) -> List[Investigation]:
-        """List investigation tickets ordered by creation time descending."""
+        """List investigation tickets ordered by creation time descending.
+        
+        When user_id is provided, strictly limits results to tickets owned by that user.
+        Legacy unowned records (created_by IS NULL) are not returned.
+        """
         stmt = select(Investigation).order_by(Investigation.created_at.desc())
+        if user_id is not None:
+            stmt = stmt.where(Investigation.created_by == user_id)
         if status and status != "All":
             stmt = stmt.where(Investigation.status == status)
         if customer_ref:
@@ -267,14 +341,35 @@ class InvestigationRepository:
         return list(session.scalars(stmt).all())
 
     @staticmethod
-    def get_investigation(session: Session, investigation_id: uuid.UUID) -> Optional[Investigation]:
-        """Fetch investigation by primary key UUID."""
-        return session.get(Investigation, investigation_id)
+    def get_investigation(
+        session: Session,
+        investigation_id: uuid.UUID,
+        user_id: Optional[uuid.UUID] = None,
+    ) -> Optional[Investigation]:
+        """Fetch investigation by primary key UUID.
+        
+        Returns None if not found or if not owned by user_id.
+        """
+        inv = session.get(Investigation, investigation_id)
+        if not inv:
+            return None
+        if user_id is not None and inv.created_by != user_id:
+            return None
+        return inv
 
     @staticmethod
-    def get_investigation_by_ticket_code(session: Session, ticket_code: str) -> Optional[Investigation]:
-        """Fetch investigation by unique ticket code."""
+    def get_investigation_by_ticket_code(
+        session: Session,
+        ticket_code: str,
+        user_id: Optional[uuid.UUID] = None,
+    ) -> Optional[Investigation]:
+        """Fetch investigation by unique ticket code.
+        
+        Returns None if not found or if not owned by user_id.
+        """
         stmt = select(Investigation).where(Investigation.ticket_code == ticket_code)
+        if user_id is not None:
+            stmt = stmt.where(Investigation.created_by == user_id)
         return session.scalars(stmt).first()
 
     @staticmethod
@@ -282,10 +377,16 @@ class InvestigationRepository:
         session: Session,
         investigation_id: uuid.UUID,
         patch: InvestigationUpdate,
+        user_id: Optional[uuid.UUID] = None,
     ) -> Optional[Investigation]:
-        """Partially update mutable fields on an investigation ticket."""
+        """Partially update mutable fields on an investigation ticket.
+        
+        Returns None if not found or if not owned by user_id.
+        """
         investigation = session.get(Investigation, investigation_id)
         if not investigation:
+            return None
+        if user_id is not None and investigation.created_by != user_id:
             return None
 
         update_data = patch.model_dump(exclude_unset=True)
@@ -307,13 +408,20 @@ class InvestigationRepository:
             raise RepositoryError(f"Failed to update investigation {investigation_id}: {exc}") from exc
 
     @staticmethod
-    def delete_investigation(session: Session, investigation_id: uuid.UUID) -> bool:
+    def delete_investigation(
+        session: Session,
+        investigation_id: uuid.UUID,
+        user_id: Optional[uuid.UUID] = None,
+    ) -> bool:
         """Delete an investigation ticket.
 
         Any linked bill_extractions survive with investigation_id SET NULL.
+        Returns False if not found or if not owned by user_id.
         """
         investigation = session.get(Investigation, investigation_id)
         if not investigation:
+            return False
+        if user_id is not None and investigation.created_by != user_id:
             return False
         try:
             session.delete(investigation)
@@ -328,11 +436,23 @@ class BillExtractionRepository:
     """Repository managing OCR-extracted electricity bill records."""
 
     @staticmethod
-    def create_extraction(session: Session, data: BillExtractionCreate) -> BillExtraction:
+    def create_extraction(
+        session: Session,
+        data: BillExtractionCreate,
+        user_id: Optional[uuid.UUID] = None,
+    ) -> BillExtraction:
         """Persist a confirmed bill extraction record.
 
         Notice: raw_ocr_text is NOT stored, strictly preserving data minimization.
+        Enforces user ownership directly on created_by and verifies linked investigation ownership.
         """
+        owner_id = user_id if user_id is not None else data.created_by
+
+        if user_id is not None and data.investigation_id:
+            inv = session.get(Investigation, data.investigation_id)
+            if inv and inv.created_by != user_id:
+                raise ResourceNotFoundError(f"Investigation '{data.investigation_id}' was not found.")
+
         extraction = BillExtraction(
             consumer_number=data.consumer_number,
             discom=data.discom,
@@ -352,6 +472,7 @@ class BillExtractionRepository:
             raw_previous_reading=data.raw_previous_reading,
             raw_current_reading=data.raw_current_reading,
             investigation_id=data.investigation_id,
+            created_by=owner_id,
         )
 
         try:
@@ -359,6 +480,9 @@ class BillExtractionRepository:
             session.commit()
             session.refresh(extraction)
             return extraction
+        except RepositoryError:
+            session.rollback()
+            raise
         except Exception as exc:
             session.rollback()
             raise RepositoryError(f"Failed to persist bill extraction: {exc}") from exc
@@ -366,13 +490,19 @@ class BillExtractionRepository:
     @staticmethod
     def list_extractions(
         session: Session,
+        user_id: Optional[uuid.UUID] = None,
         consumer_number: Optional[str] = None,
         investigation_id: Optional[uuid.UUID] = None,
         limit: int = 100,
         offset: int = 0,
     ) -> List[BillExtraction]:
-        """List bill extractions optionally filtered by consumer number or investigation."""
+        """List bill extractions optionally filtered by consumer number or investigation.
+        
+        When user_id is provided, strictly limits results to records owned by that user.
+        """
         stmt = select(BillExtraction).order_by(BillExtraction.created_at.desc())
+        if user_id is not None:
+            stmt = stmt.where(BillExtraction.created_by == user_id)
         if consumer_number:
             stmt = stmt.where(BillExtraction.consumer_number == consumer_number)
         if investigation_id:
@@ -381,6 +511,38 @@ class BillExtractionRepository:
         return list(session.scalars(stmt).all())
 
     @staticmethod
-    def get_extraction(session: Session, extraction_id: uuid.UUID) -> Optional[BillExtraction]:
-        """Fetch bill extraction by primary key."""
-        return session.get(BillExtraction, extraction_id)
+    def get_extraction(
+        session: Session,
+        extraction_id: uuid.UUID,
+        user_id: Optional[uuid.UUID] = None,
+    ) -> Optional[BillExtraction]:
+        """Fetch bill extraction by primary key.
+        
+        Returns None if not found or if not owned by user_id.
+        """
+        ext = session.get(BillExtraction, extraction_id)
+        if not ext:
+            return None
+        if user_id is not None and ext.created_by != user_id:
+            return None
+        return ext
+
+    @staticmethod
+    def list_by_consumer(
+        session: Session,
+        consumer_number: str,
+        user_id: Optional[uuid.UUID] = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> List[BillExtraction]:
+        """List bill extractions for a specific consumer owned by user_id."""
+        stmt = (
+            select(BillExtraction)
+            .where(BillExtraction.consumer_number == consumer_number)
+            .order_by(BillExtraction.created_at.desc())
+        )
+        if user_id is not None:
+            stmt = stmt.where(BillExtraction.created_by == user_id)
+        stmt = stmt.limit(limit).offset(offset)
+        return list(session.scalars(stmt).all())
+

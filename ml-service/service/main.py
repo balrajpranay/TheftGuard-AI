@@ -26,6 +26,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from . import validation_config as C
 from .db import DatabaseConfigError
+from .assistant_routes import assistant_router
 from .persistence_routes import persistence_router
 from .scoring import ServiceLoadError
 from .v1_handlers import Service, error_body
@@ -36,6 +37,7 @@ app = FastAPI(title="TheftGuard AI /v1 service", version="1.0.0",
               openapi_url="/openapi.json" if _docs else None)
 
 app.include_router(persistence_router)
+app.include_router(assistant_router)
 
 MAX_BODY = int(os.getenv("THEFTGUARD_MAX_BODY_BYTES", C.DEFAULT_MAX_BODY_BYTES))
 
@@ -116,12 +118,13 @@ async def _validation_error(request: Request, exc: RequestValidationError):
 
 @app.exception_handler(StarletteHTTPException)
 async def _http_error(request, exc):
+    headers = getattr(exc, "headers", None)
     if isinstance(exc.detail, dict) and "error" in exc.detail:
-        return _json(exc.status_code, exc.detail)
+        return JSONResponse(exc.detail, status_code=exc.status_code, headers=headers)
     default_code, default_msg = _HTTP_CODES.get(exc.status_code, ("http_error", "The request could not be processed."))
     code = default_code
     message = exc.detail if isinstance(exc.detail, str) and exc.detail and exc.status_code not in _HTTP_CODES else default_msg
-    return _json(exc.status_code, error_body(code, message))
+    return JSONResponse(error_body(code, message), status_code=exc.status_code, headers=headers)
 
 
 @app.exception_handler(DatabaseConfigError)

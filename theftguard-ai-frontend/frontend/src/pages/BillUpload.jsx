@@ -298,6 +298,9 @@ export default function BillUpload() {
         title="Bill Upload"
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            <Button to="/app/bill-comparison" variant="secondary" icon="file">
+              Compare two bills
+            </Button>
             <Button onClick={handleLoadDemo} icon="file">
               Load sample Telangana bill (Demo)
             </Button>

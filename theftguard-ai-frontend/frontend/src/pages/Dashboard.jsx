@@ -1,8 +1,9 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Bar, BarChart, CartesianGrid, Cell, LabelList, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { Button, CategoryBadge, DemoBadge, EmptyState, PageHeader, Panel, ScoreScale } from '../components/ui'
+import { Badge, Button, CategoryBadge, DemoBadge, EmptyState, PageHeader, Panel, ScoreScale } from '../components/ui'
 import { useAppState } from '../state/AppState'
+import { useAuth } from '../context/AuthContext'
 import { CATEGORIES, classify } from '../lib/risk'
 import { monthlyTotals } from '../lib/compare'
 import { MODEL_FACTS } from '../data/modelFacts'
@@ -22,8 +23,9 @@ function median(values) {
 }
 
 export default function Dashboard() {
-  const { customers, source, hasScores, thresholds, comparison, investigations, dbConnected } = useAppState()
-  const isDemo = source === 'demo'
+  const { customers, source, hasScores, thresholds, comparison, investigations, dbConnected, dbError } = useAppState()
+  const { isDemoMode } = useAuth()
+  const isDemo = isDemoMode || source === 'demo'
 
   const stats = useMemo(() => {
     const counts = { review: 0, elevated: 0, none: 0, unscored: 0 }
@@ -47,17 +49,24 @@ export default function Dashboard() {
         title="Overview"
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            {dbConnected ? (
-              <Badge tone="ok">Database Connected</Badge>
-            ) : (
+            {isDemoMode ? (
               <Badge tone="warn">Demo Mode (Local)</Badge>
+            ) : dbConnected ? (
+              <Badge tone="ok">Database Connected</Badge>
+            ) : dbError ? (
+              <Badge tone="danger">Database Offline</Badge>
+            ) : (
+              <Badge tone="outline">Connecting...</Badge>
             )}
             <Button to="/app/screening" variant="primary" icon="upload">Screen a file</Button>
+            <Button to="/app/bill-comparison" icon="file">Compare bills</Button>
             <Button to="/app/comparison" icon="compare">Compare consumption</Button>
           </div>
         }
       >
-        A summary of the screening results and consumption comparison currently loaded in this workspace.
+        {isDemoMode
+          ? 'A summary of the screening results and consumption comparison currently loaded in this demonstration workspace.'
+          : 'A summary of the screening results and consumption comparison currently loaded in your authenticated workspace.'}
       </PageHeader>
 
       <section aria-label="Summary" className="grid grid-cols-2 divide-line rounded border border-line bg-white md:grid-cols-4 md:divide-x">
@@ -77,8 +86,10 @@ export default function Dashboard() {
             <><DemoBadge /> These customers and scores are invented for demonstration. The scores were not produced by the model.</>
           ) : hasScores ? (
             'Rows screened with the TheftGuard AI ML service. Model Scores are uncalibrated and do not prove theft.'
-          ) : (
+          ) : customers.length > 0 ? (
             'Rows come from your selected file and have no Model Scores because they were previewed without scoring.'
+          ) : (
+            'Authenticated workspace: no screening records currently loaded. Screen a CSV file to evaluate model scores.'
           )}
         </p>
       </section>
@@ -194,7 +205,15 @@ export default function Dashboard() {
         <div className="space-y-5">
           <Panel
             title="Investigation queue"
-            subtitle={dbConnected ? 'Persisted in PostgreSQL database' : 'Local demo queue'}
+            subtitle={
+              isDemoMode
+                ? 'Local demo queue'
+                : dbConnected
+                  ? 'Persisted in PostgreSQL database'
+                  : dbError
+                    ? `Persistence offline (${dbError})`
+                    : 'Connecting to database...'
+            }
             actions={<Link to="/app/investigations" className="text-sm font-medium underline underline-offset-2">Open</Link>}
           >
             {investigations.length === 0 ? (

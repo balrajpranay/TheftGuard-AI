@@ -9,3 +9,6 @@ python-dotenv>=1.0,<2.0
 # Database integration (Phase 1)
 sqlalchemy>=2.0,<3.0
 psycopg[binary]>=3.1,<4.0
+
+# Authentication & JWT validation (Phase 1)
+pyjwt[crypto]>=2.8.0,<3.0
