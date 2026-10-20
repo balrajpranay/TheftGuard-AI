@@ -183,6 +183,30 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
+  const signInWithOAuth = useCallback(async ({ provider = 'google', redirectTo } = {}) => {
+    if (!isSupabaseConfigured) {
+      throw new Error(
+        'Supabase authentication is not configured in this environment. Please configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.',
+      )
+    }
+
+    const redirectUrl =
+      redirectTo || (typeof window !== 'undefined' && window.location?.origin ? window.location.origin : undefined)
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: redirectUrl,
+      },
+    })
+
+    if (error) {
+      throw error
+    }
+
+    return data
+  }, [])
+
   // A real session strictly requires a non-empty access token and a valid user id.
   // Never infer real authentication from an arbitrary user object alone.
   const isRealSession = Boolean(
@@ -223,10 +247,11 @@ export function AuthProvider({ children }) {
       signIn,
       signUp,
       signOut,
+      signInWithOAuth,
       enterDemoMode,
       exitDemoMode,
     }),
-    [session, user, loading, isRealSession, activeDemoMode, signIn, signUp, signOut, enterDemoMode, exitDemoMode],
+    [session, user, loading, isRealSession, activeDemoMode, signIn, signUp, signOut, signInWithOAuth, enterDemoMode, exitDemoMode],
   )
 
   return createElement(AuthContext.Provider, { value }, children)
@@ -248,6 +273,7 @@ export function useAuth() {
       signIn: async () => {},
       signUp: async () => {},
       signOut: async () => {},
+      signInWithOAuth: async () => {},
       enterDemoMode: () => {},
       exitDemoMode: () => {},
     }
@@ -270,6 +296,7 @@ export function useAuth() {
       signIn: async () => {},
       signUp: async () => {},
       signOut: async () => {},
+      signInWithOAuth: async () => {},
       enterDemoMode: () => {},
       exitDemoMode: () => {},
     }

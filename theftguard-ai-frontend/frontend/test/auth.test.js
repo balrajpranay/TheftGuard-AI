@@ -30,6 +30,7 @@ describe('Supabase Client & Auth Token Integration', () => {
     assert.ok(supabase.auth)
     assert.strictEqual(typeof supabase.auth.getSession, 'function')
     assert.strictEqual(typeof supabase.auth.signInWithPassword, 'function')
+    assert.strictEqual(typeof supabase.auth.signInWithOAuth, 'function')
     assert.strictEqual(typeof supabase.auth.signOut, 'function')
     assert.strictEqual(typeof supabase.auth.onAuthStateChange, 'function')
 
@@ -398,5 +399,49 @@ describe('Supabase Client & Auth Token Integration', () => {
         return true
       },
     )
+  })
+
+  test('supabase.auth.signInWithOAuth returns safe error in unconfigured fallback environment', async () => {
+    resetSupabaseClientForTesting()
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: 'http://localhost:5173' },
+    })
+    assert.strictEqual(data?.url, null)
+    assert.ok(error, 'expected error in unconfigured environment')
+    assert.match(error.message, /not configured/i)
+  })
+
+  test('supabase.auth.signInWithOAuth passes provider and redirect options correctly', async () => {
+    let capturedArgs = null
+    const mockClient = {
+      auth: {
+        signInWithOAuth: async (args) => {
+          capturedArgs = args
+          return {
+            data: { provider: 'google', url: 'https://accounts.google.com/o/oauth2/v2/auth?sample=1' },
+            error: null,
+          }
+        },
+      },
+    }
+
+    setSupabaseClientForTesting(mockClient)
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: 'http://localhost:5173',
+      },
+    })
+
+    assert.strictEqual(error, null)
+    assert.strictEqual(capturedArgs?.provider, 'google')
+    assert.strictEqual(capturedArgs?.options?.redirectTo, 'http://localhost:5173')
+    assert.strictEqual(data?.url, 'https://accounts.google.com/o/oauth2/v2/auth?sample=1')
+  })
+
+  test('useAuth provides functional signInWithOAuth fallback method', async () => {
+    const auth = useAuth()
+    assert.strictEqual(typeof auth.signInWithOAuth, 'function')
   })
 })

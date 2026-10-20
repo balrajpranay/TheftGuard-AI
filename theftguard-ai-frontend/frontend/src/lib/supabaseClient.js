@@ -70,6 +70,12 @@ const fallbackAuth = {
       'Supabase authentication is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your frontend environment.'
     ),
   }),
+  signInWithOAuth: async () => ({
+    data: { provider: 'google', url: null },
+    error: new Error(
+      'Supabase authentication is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your frontend environment.'
+    ),
+  }),
   signOut: async () => ({ error: null }),
 }
 

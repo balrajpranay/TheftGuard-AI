@@ -140,4 +140,19 @@ test.describe('TheftGuard AI — Frontend Authentication & Route Protection', ()
 
     await expect(page.getByText('Email link is invalid or has expired')).toBeVisible()
   })
+
+  test('12. Continue with Google button renders in both Sign in and Create account views', async ({ page }) => {
+    await page.goto('/signin')
+
+    const googleBtn = page.getByRole('button', { name: 'Continue with Google' })
+    await expect(googleBtn).toBeVisible()
+    await expect(googleBtn).toBeEnabled()
+    await expect(page.getByText('Or sign in with email')).toBeVisible()
+
+    // Switch to Create account tab
+    await page.getByRole('tab', { name: 'Create account' }).click()
+    await expect(googleBtn).toBeVisible()
+    await expect(googleBtn).toBeEnabled()
+    await expect(page.getByText('Or create with email')).toBeVisible()
+  })
 })

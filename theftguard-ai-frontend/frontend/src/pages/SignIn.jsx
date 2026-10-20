@@ -12,7 +12,9 @@
 import { useEffect, useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { Button, Field, inputClass, Notice, Spinner } from '../components/ui'
+import { GoogleIcon } from '../components/Icon'
 import { useAuth } from '../context/AuthContext.js'
+import { supabase } from '../lib/supabaseClient.js'
 
 export default function SignIn() {
   const navigate = useNavigate()
@@ -25,6 +27,7 @@ export default function SignIn() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [oauthLoading, setOauthLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState(null)
   const [successMessage, setSuccessMessage] = useState(null)
 
@@ -55,10 +58,46 @@ export default function SignIn() {
     setMode(newMode)
     setErrorMessage(null)
     setSuccessMessage(null)
+    setOauthLoading(false)
     setPassword('')
     setConfirmPassword('')
     if (newMode === 'signin') {
       setFullName('')
+    }
+  }
+
+  const handleGoogleSignIn = async () => {
+    setErrorMessage(null)
+    setSuccessMessage(null)
+    setOauthLoading(true)
+
+    try {
+      const redirectUrl =
+        typeof window !== 'undefined' && window.location?.origin
+          ? window.location.origin
+          : undefined
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectUrl,
+        },
+      })
+
+      if (error) {
+        throw error
+      }
+
+      if (data?.url && typeof window !== 'undefined') {
+        window.location.assign(data.url)
+      }
+    } catch (err) {
+      let msg = err?.message || 'Failed to initiate Google sign-in. Please try again.'
+      if (msg.includes('provider is not enabled') || msg.includes('Unsupported provider')) {
+        msg = 'Google sign-in is not enabled in your Supabase project. Please enable Google in Supabase Dashboard -> Authentication -> Providers.'
+      }
+      setErrorMessage(msg)
+      setOauthLoading(false)
     }
   }
 
@@ -190,7 +229,37 @@ export default function SignIn() {
         </Notice>
       ) : null}
 
-      <form onSubmit={handleSubmit} className="mt-6 space-y-4" noValidate>
+      <div className="mt-6">
+        <button
+          type="button"
+          onClick={handleGoogleSignIn}
+          disabled={submitting || oauthLoading}
+          aria-label="Continue with Google"
+          className="flex w-full items-center justify-center gap-3 rounded border border-line bg-white px-4 py-2.5 text-sm font-semibold text-ink shadow-xs transition-colors hover:bg-slate-50 hover:border-slate-400 focus:outline-hidden focus:ring-2 focus:ring-gold focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+        >
+          {oauthLoading ? (
+            <Spinner label="Connecting to Google..." />
+          ) : (
+            <>
+              <GoogleIcon className="h-5 w-5 shrink-0" />
+              <span>Continue with Google</span>
+            </>
+          )}
+        </button>
+
+        <div className="relative my-5">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-line" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-mist px-2 text-muted">
+              {mode === 'signin' ? 'Or sign in with email' : 'Or create with email'}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="mt-2 space-y-4" noValidate>
         {mode === 'register' ? (
           <Field label="Customer full name" htmlFor="full-name">
             <input
@@ -200,7 +269,7 @@ export default function SignIn() {
               required
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              disabled={submitting}
+              disabled={submitting || oauthLoading}
               className={inputClass}
               placeholder="e.g. Aditi Sharma"
             />
@@ -215,7 +284,7 @@ export default function SignIn() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            disabled={submitting}
+            disabled={submitting || oauthLoading}
             className={inputClass}
             placeholder="operator@utility.example"
           />
@@ -229,7 +298,7 @@ export default function SignIn() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            disabled={submitting}
+            disabled={submitting || oauthLoading}
             className={inputClass}
             placeholder={mode === 'register' ? 'Minimum 8 characters' : '••••••••'}
           />
@@ -244,7 +313,7 @@ export default function SignIn() {
               required
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              disabled={submitting}
+              disabled={submitting || oauthLoading}
               className={inputClass}
               placeholder="••••••••"
             />
@@ -254,7 +323,7 @@ export default function SignIn() {
         <Button
           type="submit"
           variant="dark"
-          disabled={submitting}
+          disabled={submitting || oauthLoading}
           className="w-full"
         >
           {submitting ? (
@@ -278,6 +347,7 @@ export default function SignIn() {
         <Button
           type="button"
           onClick={handleContinueDemo}
+          disabled={submitting || oauthLoading}
           variant="primary"
           className="w-full"
         >
