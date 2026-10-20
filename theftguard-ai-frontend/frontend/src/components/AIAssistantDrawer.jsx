@@ -12,6 +12,7 @@ import {
 } from '../lib/householdQuestionnaire'
 import { chatWithAssistant, DEFAULT_SUGGESTIONS, CONTEXT_SUGGESTIONS_BILL_LOADED } from '../lib/assistantEngine'
 import FormattedAssistantMessage from './FormattedAssistantMessage'
+import { useLanguage } from '../context/LanguageContext.js'
 
 export default function AIAssistantDrawer({
   open = false,
@@ -20,6 +21,7 @@ export default function AIAssistantDrawer({
   initialQuestionnaireAnswers = null,
   onQuestionnaireChange,
 }) {
+  const { language, t } = useLanguage()
   const [activeTab, setActiveTab] = useState('chat') // 'chat' | 'questionnaire' | 'breakdown'
   const [inputText, setInputText] = useState('')
   const [isTyping, setIsTyping] = useState(false)
@@ -204,6 +206,7 @@ export default function AIAssistantDrawer({
         billContext,
         questionnaireAnswers: answers,
         history: updatedHistory.map((m) => ({ role: m.role, content: m.content })),
+        language,
       })
 
       if (res.provider) setProviderMode(res.provider)

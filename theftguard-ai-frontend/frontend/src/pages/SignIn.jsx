@@ -13,13 +13,16 @@ import { useEffect, useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { Button, Field, inputClass, Notice, Spinner } from '../components/ui'
 import { GoogleIcon } from '../components/Icon'
+import LanguageSelector from '../components/LanguageSelector'
 import { useAuth } from '../context/AuthContext.js'
+import { useLanguage } from '../context/LanguageContext.js'
 import { supabase } from '../lib/supabaseClient.js'
 
 export default function SignIn() {
   const navigate = useNavigate()
   const location = useLocation()
   const { signIn, signUp, isAuthenticated, isSupabaseConfigured, enterDemoMode, loading } = useAuth()
+  const { language, setLanguage, t } = useLanguage()
 
   const [mode, setMode] = useState('signin')
   const [fullName, setFullName] = useState('')
@@ -118,26 +121,26 @@ export default function SignIn() {
 
     if (mode === 'register') {
       if (!fullName.trim()) {
-        setErrorMessage('Please provide your full name.')
+        setErrorMessage(t('auth.errProvideName'))
         return
       }
       if (password.length < 8) {
-        setErrorMessage('Password must be at least 8 characters long.')
+        setErrorMessage(t('auth.errPasswordLength'))
         return
       }
       if (password !== confirmPassword) {
-        setErrorMessage('Passwords do not match. Please verify your password confirmation.')
+        setErrorMessage(t('auth.errPasswordMismatch'))
         return
       }
     }
 
     if (!email.trim() || !password) {
-      setErrorMessage('Please provide both an email address and password.')
+      setErrorMessage(t('auth.errProvideEmailPassword'))
       return
     }
 
     if (!email.includes('@') || !email.includes('.')) {
-      setErrorMessage('Please provide a valid email address.')
+      setErrorMessage(t('auth.errValidEmail'))
       return
     }
 
@@ -148,12 +151,10 @@ export default function SignIn() {
         await signIn({ email, password })
         navigate(redirectPath, { replace: true })
       } else {
-        const result = await signUp({ email, password, fullName })
+        const result = await signUp({ email, password, fullName, preferredLanguage: language })
         // If email confirmation is required by Supabase project settings:
         if (result?.user && !result?.session) {
-          setSuccessMessage(
-            'Account created successfully! Please check your email to verify your address before signing in.',
-          )
+          setSuccessMessage(t('auth.accountCreatedSuccess'))
           setPassword('')
           setConfirmPassword('')
           setFullName('')
@@ -165,13 +166,13 @@ export default function SignIn() {
     } catch (err) {
       let msg = err?.message || 'Authentication failed. Please check your connection and try again.'
       if (msg === 'Invalid login credentials') {
-        msg = 'Invalid email or password. Please verify your credentials.'
+        msg = t('auth.errInvalidCreds')
       } else if (msg.includes('Email not confirmed')) {
         msg = 'Your email address has not been verified yet. Please check your inbox and click the verification link before signing in.'
       } else if (msg.includes('User already registered') || msg.includes('already exists')) {
         msg = 'An account with this email address already exists. Please sign in instead.'
       } else if (msg.includes('Password should be at least')) {
-        msg = 'Password must be at least 8 characters long.'
+        msg = t('auth.errPasswordLength')
       }
       setErrorMessage(msg)
     } finally {
@@ -186,6 +187,14 @@ export default function SignIn() {
 
   return (
     <div className="mx-auto max-w-md px-4 py-14">
+      {/* Top Header & Language Selector */}
+      <div className="mb-4 flex items-center justify-between">
+        <span className="text-xs font-semibold uppercase tracking-wider text-muted">
+          TheftGuard AI
+        </span>
+        <LanguageSelector variant="compact" />
+      </div>
+
       {/* Mode Switcher Tabs */}
       <div role="tablist" aria-label="Authentication mode" className="mb-6 flex rounded border border-line bg-white p-1">
         <button
@@ -197,7 +206,7 @@ export default function SignIn() {
             mode === 'signin' ? 'bg-ink text-white shadow-xs' : 'text-muted hover:text-ink'
           }`}
         >
-          Sign in
+          {t('auth.signInTab')}
         </button>
         <button
           role="tab"
@@ -208,22 +217,22 @@ export default function SignIn() {
             mode === 'register' ? 'bg-ink text-white shadow-xs' : 'text-muted hover:text-ink'
           }`}
         >
-          Create account
+          {t('auth.createAccountTab')}
         </button>
       </div>
 
       <h1 className="text-3xl font-bold tracking-tight">
-        {mode === 'signin' ? 'Sign in' : 'Create account'}
+        {mode === 'signin' ? t('auth.signInTitle') : t('auth.createAccountTitle')}
       </h1>
       <p className="mt-1 text-sm text-muted">
         {mode === 'signin'
-          ? 'TheftGuard AI utility screening and investigation workspace.'
-          : 'Register for TheftGuard AI workspace access.'}
+          ? t('auth.signInSubtitle')
+          : t('auth.createAccountSubtitle')}
       </p>
 
       {!isSupabaseConfigured ? (
-        <Notice tone="info" title="Demo environment" className="mt-4">
-          Supabase is not configured in this environment (<code>VITE_SUPABASE_URL</code> missing). You can explore the application using the demonstration workspace below.
+        <Notice tone="info" title={t('auth.demoNoticeTitle')} className="mt-4">
+          {t('auth.demoNoticeText')}
         </Notice>
       ) : null}
 
@@ -244,15 +253,15 @@ export default function SignIn() {
           type="button"
           onClick={handleGoogleSignIn}
           disabled={submitting || oauthLoading}
-          aria-label="Continue with Google"
+          aria-label={t('auth.continueGoogle')}
           className="flex w-full items-center justify-center gap-3 rounded border border-line bg-white px-4 py-2.5 text-sm font-semibold text-ink shadow-xs transition-colors hover:bg-slate-50 hover:border-slate-400 focus:outline-hidden focus:ring-2 focus:ring-gold focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
           {oauthLoading ? (
-            <Spinner label="Connecting to Google..." />
+            <Spinner label={t('auth.connectingGoogle')} />
           ) : (
             <>
               <GoogleIcon className="h-5 w-5 shrink-0" />
-              <span>Continue with Google</span>
+              <span>{t('auth.continueGoogle')}</span>
             </>
           )}
         </button>
@@ -263,7 +272,7 @@ export default function SignIn() {
           </div>
           <div className="relative flex justify-center text-xs uppercase">
             <span className="bg-mist px-2 text-muted">
-              {mode === 'signin' ? 'Or sign in with email' : 'Or create with email'}
+              {mode === 'signin' ? t('auth.orEmailSignIn') : t('auth.orEmailCreate')}
             </span>
           </div>
         </div>
@@ -271,7 +280,7 @@ export default function SignIn() {
 
       <form onSubmit={handleSubmit} className="mt-2 space-y-4" noValidate>
         {mode === 'register' ? (
-          <Field label="Customer full name" htmlFor="full-name">
+          <Field label={t('auth.fullNameLabel')} htmlFor="full-name">
             <input
               id="full-name"
               type="text"
@@ -281,12 +290,12 @@ export default function SignIn() {
               onChange={(e) => setFullName(e.target.value)}
               disabled={submitting || oauthLoading}
               className={inputClass}
-              placeholder="e.g. Aditi Sharma"
+              placeholder={t('auth.fullNamePlaceholder')}
             />
           </Field>
         ) : null}
 
-        <Field label="Email address" htmlFor="email">
+        <Field label={t('auth.emailLabel')} htmlFor="email">
           <input
             id="email"
             type="email"
@@ -296,11 +305,11 @@ export default function SignIn() {
             onChange={(e) => setEmail(e.target.value)}
             disabled={submitting || oauthLoading}
             className={inputClass}
-            placeholder="operator@utility.example"
+            placeholder={t('auth.emailPlaceholder')}
           />
         </Field>
 
-        <Field label="Password" htmlFor="password">
+        <Field label={t('auth.passwordLabel')} htmlFor="password">
           <input
             id="password"
             type="password"
@@ -310,12 +319,12 @@ export default function SignIn() {
             onChange={(e) => setPassword(e.target.value)}
             disabled={submitting || oauthLoading}
             className={inputClass}
-            placeholder={mode === 'register' ? 'Minimum 8 characters' : '••••••••'}
+            placeholder={mode === 'register' ? t('auth.passwordRegisterPlaceholder') : t('auth.passwordPlaceholder')}
           />
         </Field>
 
         {mode === 'register' ? (
-          <Field label="Confirm password" htmlFor="confirm-password">
+          <Field label={t('auth.confirmPasswordLabel')} htmlFor="confirm-password">
             <input
               id="confirm-password"
               type="password"
@@ -325,8 +334,14 @@ export default function SignIn() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               disabled={submitting || oauthLoading}
               className={inputClass}
-              placeholder="••••••••"
+              placeholder={t('auth.passwordPlaceholder')}
             />
+          </Field>
+        ) : null}
+
+        {mode === 'register' ? (
+          <Field label={t('auth.preferredLanguageLabel')} htmlFor="preferred-language">
+            <LanguageSelector id="preferred-language" variant="dropdown" ariaLabel={t('auth.preferredLanguageLabel')} />
           </Field>
         ) : null}
 
@@ -337,11 +352,11 @@ export default function SignIn() {
           className="w-full"
         >
           {submitting ? (
-            <Spinner label={mode === 'signin' ? 'Signing in...' : 'Creating account...'} />
+            <Spinner label={mode === 'signin' ? t('auth.signingIn') : t('auth.creatingAccount')} />
           ) : mode === 'signin' ? (
-            'Sign in'
+            t('auth.signInTab')
           ) : (
-            'Create account'
+            t('auth.createAccountTab')
           )}
         </Button>
 
@@ -350,7 +365,7 @@ export default function SignIn() {
             <div className="w-full border-t border-line" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-mist px-2 text-muted">Or evaluate sample data</span>
+            <span className="bg-mist px-2 text-muted">{t('auth.orEvaluateSample')}</span>
           </div>
         </div>
 
@@ -361,31 +376,31 @@ export default function SignIn() {
           variant="primary"
           className="w-full"
         >
-          Continue to the demo workspace
+          {t('auth.continueDemo')}
         </Button>
       </form>
 
       <div className="mt-6 text-center text-sm">
         {mode === 'signin' ? (
           <span className="text-muted">
-            Don&apos;t have an account?{' '}
+            {t('auth.noAccountPrompt')}{' '}
             <button
               type="button"
               onClick={() => switchMode('register')}
               className="font-medium text-ink underline underline-offset-2 hover:text-gold cursor-pointer"
             >
-              Create account
+              {t('auth.createAccountTab')}
             </button>
           </span>
         ) : (
           <span className="text-muted">
-            Already have an account?{' '}
+            {t('auth.haveAccountPrompt')}{' '}
             <button
               type="button"
               onClick={() => switchMode('signin')}
               className="font-medium text-ink underline underline-offset-2 hover:text-gold cursor-pointer"
             >
-              Sign in
+              {t('auth.signInTab')}
             </button>
           </span>
         )}
@@ -393,8 +408,8 @@ export default function SignIn() {
 
       <p className="mt-4 text-center text-xs text-muted">
         {mode === 'signin'
-          ? 'Access is restricted to authorized electricity distribution personnel. Contact your DISCOM administrator if your account requires operator provisioning.'
-          : 'New accounts are registered with standard workspace access. Access to official utility distribution records and customer PII requires administrator approval.'}
+          ? t('auth.accessNoticeSignIn')
+          : t('auth.accessNoticeRegister')}
       </p>
     </div>
   )

@@ -28,10 +28,12 @@ import {
 import { executeChatTool } from '../lib/chatToolsEngine'
 import { chatWithAssistant, DEFAULT_SUGGESTIONS } from '../lib/assistantEngine'
 import { getPluginById } from '../lib/assistantPlugins'
+import { useLanguage } from '../context/LanguageContext.js'
 
 export default function AIChatWorkspace() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { user, isAuthenticated, isDemoMode, loading: authLoading } = useAuth()
+  const { language, t } = useLanguage()
   const currentUserId = isAuthenticated && user?.id ? user.id : null
 
   const {
@@ -369,6 +371,7 @@ export default function AIChatWorkspace() {
         history: priorHistory,
         signal: controller.signal,
         activePlugins: selectedPlugins,
+        language,
       })
 
       if (currentReqId !== currentRequestIdRef.current) return
@@ -463,6 +466,7 @@ export default function AIChatWorkspace() {
         history: priorHistory,
         signal: controller.signal,
         activePlugins: selectedPlugins,
+        language,
       })
 
       if (currentReqId !== currentRequestIdRef.current) return

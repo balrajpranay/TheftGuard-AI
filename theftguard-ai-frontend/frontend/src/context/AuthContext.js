@@ -153,7 +153,7 @@ export function AuthProvider({ children }) {
     return data
   }, [])
 
-  const signUp = useCallback(async ({ email, password, fullName }) => {
+  const signUp = useCallback(async ({ email, password, fullName, preferredLanguage = 'en' }) => {
     if (!isSupabaseConfigured) {
       throw new Error(
         'Supabase authentication is not configured in this environment. Please configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.',
@@ -161,17 +161,21 @@ export function AuthProvider({ children }) {
     }
 
     const trimmedName = typeof fullName === 'string' ? fullName.trim() : ''
+    const lang = ['en', 'hi', 'te'].includes(preferredLanguage) ? preferredLanguage : 'en'
 
     const redirectUrl =
       typeof window !== 'undefined' && window.location?.origin
         ? `${window.location.origin}/signin`
         : undefined
 
-    // Pass email, password, and safely include full_name in user_metadata.
+    // Pass email, password, and safely include full_name and preferred_language in user_metadata.
     // Explicitly omit any role, is_admin, or permission claims to prevent client-side privilege tampering.
     // Include emailRedirectTo so verification links route back to active host/port.
     const signUpOptions = {
-      ...(trimmedName ? { data: { full_name: trimmedName } } : {}),
+      data: {
+        ...(trimmedName ? { full_name: trimmedName } : {}),
+        preferred_language: lang,
+      },
       ...(redirectUrl ? { emailRedirectTo: redirectUrl } : {}),
     }
 
@@ -196,6 +200,21 @@ export function AuthProvider({ children }) {
 
     return data
   }, [])
+
+  const updateUserLanguage = useCallback(async (newLang) => {
+    if (!isSupabaseConfigured || !session?.user) return
+    const lang = ['en', 'hi', 'te'].includes(newLang) ? newLang : 'en'
+    try {
+      const { data, error } = await supabase.auth.updateUser({
+        data: { preferred_language: lang },
+      })
+      if (!error && data?.user) {
+        setUser(data.user)
+      }
+    } catch (err) {
+      console.warn('[TheftGuard AI Auth] Failed to sync preferred language to Supabase:', err)
+    }
+  }, [session])
 
   const signOut = useCallback(async () => {
     try {
@@ -279,8 +298,9 @@ export function AuthProvider({ children }) {
       signInWithOAuth,
       enterDemoMode,
       exitDemoMode,
+      updateUserLanguage,
     }),
-    [session, user, loading, isRealSession, activeDemoMode, signIn, signUp, signOut, signInWithOAuth, enterDemoMode, exitDemoMode],
+    [session, user, loading, isRealSession, activeDemoMode, signIn, signUp, signOut, signInWithOAuth, enterDemoMode, exitDemoMode, updateUserLanguage],
   )
 
   return createElement(AuthContext.Provider, { value }, children)
@@ -305,6 +325,7 @@ export function useAuth() {
       signInWithOAuth: async () => {},
       enterDemoMode: () => {},
       exitDemoMode: () => {},
+      updateUserLanguage: async () => {},
     }
   }
 

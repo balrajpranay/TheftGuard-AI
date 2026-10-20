@@ -4,8 +4,10 @@ import Logo, { LogoMark } from './Logo'
 import Icon from './Icon'
 import { DemoBadge } from './ui'
 import AIAssistantDrawer from './AIAssistantDrawer'
+import LanguageSelector from './LanguageSelector'
 import { useAppState } from '../state/AppState'
 import { useAuth } from '../context/AuthContext.js'
+import { useLanguage } from '../context/LanguageContext.js'
 
 import {
   NAV,
@@ -17,6 +19,7 @@ export { NAV, SIDEBAR_COLLAPSED_STORAGE_KEY }
 
 function NavItems({ onNavigate, collapsed, onTooltip, onTooltipLeave }) {
   const { investigations } = useAppState()
+  const { t } = useLanguage()
   const open = investigations.filter((i) => i.status !== 'Closed').length
 
   return (
@@ -24,6 +27,7 @@ function NavItems({ onNavigate, collapsed, onTooltip, onTooltipLeave }) {
       {NAV.map((n) => {
         const isChat = n.to === '/app/chat'
         const hasOpenInvestigations = n.to.endsWith('investigations') && open > 0
+        const displayLabel = n.labelKey ? t(n.labelKey) : n.label
 
         if (collapsed) {
           return (
@@ -36,19 +40,19 @@ function NavItems({ onNavigate, collapsed, onTooltip, onTooltipLeave }) {
               }}
               onMouseEnter={(e) =>
                 onTooltip?.(e, {
-                  label: n.label,
+                  label: displayLabel,
                   badge: isChat ? 'AI' : (hasOpenInvestigations ? String(open) : null),
                 })
               }
               onMouseLeave={onTooltipLeave}
               onFocus={(e) =>
                 onTooltip?.(e, {
-                  label: n.label,
+                  label: displayLabel,
                   badge: isChat ? 'AI' : (hasOpenInvestigations ? String(open) : null),
                 })
               }
               onBlur={onTooltipLeave}
-              aria-label={n.label}
+              aria-label={displayLabel}
               className={({ isActive }) =>
                 `relative flex h-10 w-10 items-center justify-center rounded-lg transition-colors cursor-pointer ${
                   isActive
@@ -98,7 +102,7 @@ function NavItems({ onNavigate, collapsed, onTooltip, onTooltipLeave }) {
             }
           >
             <Icon name={n.icon} className={`h-5 w-5 ${isChat ? 'text-gold' : ''}`} />
-            <span className="flex-1">{n.label}</span>
+            <span className="flex-1">{displayLabel}</span>
             {isChat ? (
               <span className="rounded bg-gold/20 text-gold border border-gold/40 px-1.5 py-0.2 text-[10px] font-bold tracking-wider uppercase">
                 AI
@@ -128,6 +132,7 @@ export default function AppShell() {
   const [tooltip, setTooltip] = useState(null)
 
   const { user, isAuthenticated, isDemoMode, signOut } = useAuth()
+  const { language, t } = useLanguage()
   const {
     source,
     uploaded,
@@ -337,7 +342,7 @@ export default function AppShell() {
           <div className="mt-auto border-t border-white/15 pt-4 text-xs text-white/70">
             {isAuthenticated ? (
               <div className="space-y-1">
-                <p className="text-[11px] uppercase tracking-wider text-white/50">Signed in as</p>
+                <p className="text-[11px] uppercase tracking-wider text-white/50">{t('footer.signedInAs')}</p>
                 {user?.user_metadata?.full_name ? (
                   <>
                     <p className="font-semibold text-white truncate" title={user.user_metadata.full_name}>
@@ -357,24 +362,25 @@ export default function AppShell() {
                   onClick={signOut}
                   className="mt-2 inline-flex items-center gap-1 text-gold hover:underline underline-offset-2 cursor-pointer"
                 >
-                  Sign out
+                  {t('common.signOut')}
                 </button>
               </div>
             ) : (
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="inline-flex items-center rounded bg-amber-400/20 px-1.5 py-0.5 text-[11px] font-medium text-amber-300 border border-amber-400/30">
-                    Demo Workspace
+                    {t('footer.demoWorkspace')}
                   </span>
                   <Link to="/signin" className="text-xs text-gold hover:underline">
-                    Sign in
+                    {t('common.signIn')}
                   </Link>
                 </div>
-                <p className="mt-1 text-[11px] text-white/60">Synthetic demonstration mode.</p>
+                <p className="mt-1 text-[11px] text-white/60">{t('footer.syntheticNotice')}</p>
               </div>
             )}
             <div className="mt-3 border-t border-white/10 pt-2 flex items-center justify-between">
-              <Link to="/" className="inline-block text-white/60 underline underline-offset-2 hover:text-white">Back to site</Link>
+              <Link to="/" className="inline-block text-white/60 underline underline-offset-2 hover:text-white">{t('common.backToSite')}</Link>
+              <LanguageSelector variant="compact" />
             </div>
           </div>
         )}
@@ -453,17 +459,21 @@ export default function AppShell() {
                     }}
                     className="mt-2 inline-flex items-center gap-1 text-gold hover:underline cursor-pointer"
                   >
-                    Sign out
+                    {t('common.signOut')}
                   </button>
                 </div>
               ) : (
                 <div className="flex items-center justify-between">
-                  <span className="text-amber-300 text-xs">Demo Mode</span>
+                  <span className="text-amber-300 text-xs">{t('common.demoMode')}</span>
                   <Link to="/signin" onClick={() => setMenu(false)} className="text-gold underline">
-                    Sign in
+                    {t('common.signIn')}
                   </Link>
                 </div>
               )}
+              <div className="mt-3 border-t border-white/10 pt-2 flex items-center justify-between">
+                <span className="text-white/60">{t('common.language')}</span>
+                <LanguageSelector variant="compact" />
+              </div>
             </div>
           </div>
         </div>
@@ -473,26 +483,26 @@ export default function AppShell() {
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-gold bg-pale px-4 py-2 text-sm print:hidden sm:px-6">
           <DemoBadge>
             {isChatRoute
-              ? 'Local Storage'
+              ? t('topBanner.localStorageBadge')
               : hasScores
-                ? 'Live ML'
+                ? t('topBanner.liveMlBadge')
                 : isDemoMode
-                  ? 'Demo Mode'
-                  : 'Authenticated'}
+                  ? t('topBanner.demoBadge')
+                  : t('topBanner.authBadge')}
           </DemoBadge>
           <span>
             {isChatRoute ? (
-              <>AI Chat operates client-side with <strong>conversations stored locally in this browser, separated per account</strong>. History is not synced to a server; anyone with access to this browser profile can inspect local storage.</>
+              t('topBanner.chatText')
             ) : source === 'uploaded' && uploaded ? (
               hasScores ? (
-                <>Results show rows from <strong>{uploaded.fileName}</strong> scored with the TheftGuard AI ML service. Model Scores do not prove theft.</>
+                t('topBanner.uploadedScored', { fileName: uploaded.fileName })
               ) : (
-                <>Results show rows from <strong>{uploaded.fileName}</strong>, without Model Scores (preview mode).</>
+                t('topBanner.uploadedPreview', { fileName: uploaded.fileName })
               )
             ) : isDemoMode ? (
-              'Demonstration workspace with sample data. Customer screening is preview-only; chat history is saved locally in this browser, separated per account.'
+              t('topBanner.demoText')
             ) : (
-              <>Authenticated utility workspace for <strong>{user?.user_metadata?.full_name || user?.email || 'Operator'}</strong>. Secure utility screening and investigation records.</>
+              t('topBanner.authText', { name: user?.user_metadata?.full_name || user?.email || 'Operator' })
             )}
           </span>
         </div>
@@ -509,16 +519,16 @@ export default function AppShell() {
           title="Open Dedicated Full-Page AI Chat Workspace"
         >
           <Icon name="chat" className="h-3.5 w-3.5 text-gold" />
-          <span>Full Chat</span>
+          <span>{t('assistantDrawer.fullChat')}</span>
         </Link>
         <button
           type="button"
           onClick={() => setAssistantOpen(true)}
           className="flex items-center gap-2 rounded-full bg-gold px-4 py-2.5 text-xs font-bold text-ink shadow-lg hover:bg-[#E0B220] hover:shadow-xl transition-all border border-gold focus:outline-hidden focus:ring-2 focus:ring-gold cursor-pointer"
-          aria-label="Open AI Bill Assistant"
+          aria-label={t('assistantDrawer.askAssistant')}
         >
           <span className="text-base leading-none">⚡</span>
-          <span>Ask AI Assistant</span>
+          <span>{t('assistantDrawer.askAssistant')}</span>
         </button>
       </div>
 

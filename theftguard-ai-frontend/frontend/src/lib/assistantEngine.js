@@ -460,11 +460,15 @@ export function generateClientRuleResponse(
   billContext = null,
   questionnaireAnswers = null,
   history = [],
-  activePlugins = []
+  activePlugins = [],
+  language = 'en'
 ) {
   const lowerMsg = String(message || '').toLowerCase().trim()
   const words = extractWords(lowerMsg)
   const recentContext = detectHistoryContext(history)
+
+  const isTelugu = language === 'te' || /[\u0C00-\u0C7F]/.test(lowerMsg)
+  const isHindi = language === 'hi' || /[\u0900-\u097F]/.test(lowerMsg)
 
   // Synthesize structured analysis if bill context exists
   const analysis = billContext
@@ -479,10 +483,368 @@ export function generateClientRuleResponse(
       )
     : null
 
-  const disclaimers = [
-    'Educational Guidance: Estimates are based on standard BEE 3-star appliance ratings.',
-    'Neutral Finding: Normal household fluctuations, weather, visitors, or tariff slab crossing does not establish electricity theft or meter tampering.',
-  ]
+  const disclaimers = isTelugu
+    ? [
+        'అకడమిక్ గమనిక: అంచనాలు భారతీయ BEE 3-స్టార్ ఉపకరణాల రేటింగ్‌ల ఆధారంగా రూపొందించబడ్డాయి.',
+        'సాంకేతిక పరిశీలన: సాధారణ గృహ వినియోగ మార్పులు లేదా టారిఫ్ స్లాబ్ మారడం నేరుగా దొంగతనాన్ని లేదా మీటర్ ట్యాంపరింగ్‌ను సూచించదు.',
+      ]
+    : isHindi
+    ? [
+        'शैक्षिक मार्गदर्शन: अनुमान मानक भारतीय BEE 3-स्टार उपकरण रेटिंग पर आधारित हैं।',
+        'तटस्थ निष्कर्ष: सामान्य मौसमी बदलाव या टैरिफ स्लैब पार करना बिजली चोरी या छेड़छाड़ का संकेत नहीं है।',
+      ]
+    : [
+        'Educational Guidance: Estimates are based on standard BEE 3-star appliance ratings.',
+        'Neutral Finding: Normal household fluctuations, weather, visitors, or tariff slab crossing does not establish electricity theft or meter tampering.',
+      ]
+
+  // ---------------------------------------------------------------------------
+  // LOCALIZED INTENT HANDLERS (TELUGU)
+  // ---------------------------------------------------------------------------
+  if (isTelugu) {
+    // 1. Definition of kWh / Power vs Energy
+    if (
+      lowerMsg.includes('kwh') ||
+      lowerMsg.includes('కిలోవాట్') ||
+      lowerMsg.includes('యూనిట్') ||
+      lowerMsg.includes('యూనిట్లు') ||
+      lowerMsg.includes('power vs energy') ||
+      lowerMsg.includes('విద్యుత్ అంటే ఏమిటి')
+    ) {
+      return {
+        reply:
+          `### kWh (కిలోవాట్-అవర్) అంటే ఏమిటి?\n\n` +
+          `**kWh** అనేది మీ విద్యుత్ మీటర్‌లో నమోదయ్యే **'యూనిట్' (Unit)**.\n\n` +
+          `• **1 kWh = 1 యూనిట్ విద్యుత్**.\n` +
+          `• **ఉదాహరణ**: 1000 వాట్ల విద్యుత్ పరికరాన్ని (గీజర్ లేదా ఐరన్ బాక్స్) 1 గంట నిరంతరాయంగా వాడితే 1 యూనిట్ (1 kWh) విద్యుత్ ఖర్చవుతుంది.\n\n` +
+          `**పవర్ (kW) మరియు ఎనర్జీ (kWh) మధ్య తేడా:**\n` +
+          `• **kW (కిలోవాట్)**: ఒక పరికరానికి ఒకేసారి అవసరమయ్యే విద్యుత్ సామర్థ్యం (Power).\n` +
+          `• **kWh (యూనిట్లు)**: ఆ పరికరాన్ని నిర్దిష్ట సమయం వాడినప్పుడు ఖర్చయ్యే మొత్తం విద్యుత్ శక్తి (Energy).\n\n` +
+          `**మీటర్ పరిశీలన:** మీ మీటర్‌లోని LCD డిస్ప్లేలో 'kWh' అని వచ్చే అంకెలు మీరు వినియోగించిన మొత్తం యూనిట్లను తెలియజేస్తాయి.`,
+        provider: 'local_rule_engine',
+        structured_analysis: analysis,
+        suggestions: [
+          'ఈ నెల నా బిల్లు ఎందుకు పెరిగింది?',
+          'ఏసీ 8 గంటలు వాడితే ఎంత కరెంట్ కాలుతుంది?',
+          'టారిఫ్ స్లాబ్‌లు ఎలా పనిచేస్తాయి?',
+        ],
+        disclaimers,
+      }
+    }
+
+    // 2. Webpage Explanation
+    if (
+      lowerMsg.includes('webpage') ||
+      lowerMsg.includes('వెబ్‌పేజీ') ||
+      lowerMsg.includes('ఈ పేజీ') ||
+      lowerMsg.includes('వివరించ') ||
+      lowerMsg.includes('యాప్ గురించి')
+    ) {
+      return {
+        reply:
+          `### TheftGuard AI వెబ్‌పేజీ సమాచారం\n\n` +
+          `TheftGuard AI అనేది విద్యుత్ వినియోగదారులు మరియు పంపిణీ సంస్థల కోసం రూపొందించబడిన స్మార్ట్ వేదిక.\n\n` +
+          `**ముఖ్య విభాగాలు:**\n` +
+          `1. **అవలోకనం (Overview)**: మీ విద్యుత్ వినియోగం మరియు ముఖ్య వివరాల సారాంశం.\n` +
+          `2. **బిల్లుల పోలిక (Bill Comparison)**: రెండు నెలల బిల్లులను పోల్చి యూనిట్లు, రోజువారీ వినియోగం మరియు ఖర్చుల వ్యత్యాసాన్ని విశ్లేషించడం.\n` +
+          `3. **బిల్ అప్‌లోడ్ (Bill Upload - OCR)**: స్పాట్ బిల్లింగ్ రసీదును స్కాన్ చేసి రీడింగ్‌లను ఆటోమేటిక్‌గా సరిచూసుకోవడం.\n` +
+          `4. **తనిఖీలు (Investigations)**: మీటర్ వ్యత్యాసాల రికార్డులు మరియు క్షేత్ర పరిశీలన.\n` +
+          `5. **AI చాట్ (AI Chat)**: విద్యుత్ బిల్లులు, పరికరాల లోడ్ మరియు పొదుపు చిట్కాలపై సందేహాలు నివృత్తి చేసుకోవడం.`,
+        provider: 'local_rule_engine',
+        structured_analysis: analysis,
+        suggestions: [
+          'బిల్లుల పోలిక పేజీకి వెళ్లండి',
+          'kWh అంటే ఏమిటి?',
+          'తర్వాత నేను ఏమి చేయాలి?',
+        ],
+        disclaimers,
+      }
+    }
+
+    // 3. AC Energy Consumption
+    if (
+      lowerMsg.includes('ac') ||
+      lowerMsg.includes('ఎయిర్ కండీషనర్') ||
+      lowerMsg.includes('ఏసీ') ||
+      lowerMsg.includes('ఎయిర్ కూలర్')
+    ) {
+      const { hours } = extractApplianceNumbers(message)
+      const h = hours != null ? hours : 8
+      const dailyKwh = (h * 0.975).toFixed(2)
+      const monthlyKwh = (dailyKwh * 30).toFixed(0)
+      const monthlyCost = (monthlyKwh * 7).toFixed(0)
+
+      return {
+        reply:
+          `### ఎయిర్ కండీషనర్ (AC) విద్యుత్ వినియోగ అంచనా (${h} గంటలు/రోజు)\n\n` +
+          `• **రోజువారీ వినియోగం**: సుమారు **${dailyKwh} kWh (${dailyKwh} యూనిట్లు)** (${h} గంటల వాడకానికి, 1.5 టన్ 3-స్టార్ ఇన్వర్టర్ AC 24°C వద్ద).\n` +
+          `• **నెలవారీ వినియోగం**: దాదాపు **${monthlyKwh} యూనిట్లు/నెల** (30 రోజులకు).\n` +
+          `• **నెలవారీ సుమారు ఖర్చు**: దాదాపు **₹${monthlyCost}** (సగటున ₹7/యూనిట్ చొప్పున).\n\n` +
+          `💡 **విద్యుత్ పొదుపు సూచనలు:**\n` +
+          `1. AC ని 18°C బదులు **24°C** వద్ద ఉంచడం వల్ల సుమారు 20% నుండి 24% వరకు విద్యుత్ ఆదా అవుతుంది.\n` +
+          `2. ప్రతి 2 వారాలకు ఒకసారి ఎయిర్ ఫిల్టర్లను శుభ్రం చేయడం వల్ల కంప్రెషర్‌పై భారం తగ్గుతుంది.\n` +
+          `3. తలుపులు, కిటికీలు సరిగ్గా మూసి ఉంచడం వల్ల గది త్వరగా చల్లబడుతుంది.`,
+        provider: 'local_rule_engine',
+        structured_analysis: analysis,
+        suggestions: [
+          'గీజర్ ఎంత కరెంట్ తీసుకుంటుంది?',
+          'టారిఫ్ స్లాబ్‌లు ఎలా పనిచేస్తాయి?',
+          'నా మీటర్ సరిగ్గా ఉందో లేదో ఎలా చూడాలి?',
+        ],
+        disclaimers,
+      }
+    }
+
+    // 4. Onboarding Next Steps
+    if (
+      lowerMsg.includes('next') ||
+      lowerMsg.includes('తర్వాత') ||
+      lowerMsg.includes('ఏం చేయాలి') ||
+      lowerMsg.includes('సలహా')
+    ) {
+      return {
+        reply:
+          `### తదుపరి మీరు ఏమి చేయవచ్చు?\n\n` +
+          `1. [బిల్లుల పోలిక](/app/bill-comparison) పేజీలో గత రెండు నెలల బిల్లులను నమోదు చేయండి.\n` +
+          `2. గృహోపకరణాల సర్వే (AC, గీజర్, రిఫ్రిజిరేటర్, మోటార్ పంపు) పూరించడం ద్వారా ఏ పరికరం ఎంత విద్యుత్ తీసుకుంటుందో తెలుసుకోండి.\n` +
+          `3. [బిల్ అప్‌లోడ్](/app/bill-upload) పేజీలో స్పాట్ బిల్లు రసీదును స్కాన్ చేసి రీడింగ్‌లను సరిచూసుకోండి.`,
+        provider: 'local_rule_engine',
+        structured_analysis: analysis,
+        suggestions: [
+          'బిల్లుల పోలిక మొదలుపెట్టండి',
+          'kWh అంటే ఏమిటి?',
+          'ఏసీ 8 గంటలు వాడితే ఎంత కరెంట్ కాలుతుంది?',
+        ],
+        disclaimers,
+      }
+    }
+
+    // 5. Theft / Tampering Inquiry (Safe & Reassuring)
+    if (
+      lowerMsg.includes('theft') ||
+      lowerMsg.includes('దొంగతనం') ||
+      lowerMsg.includes('చౌర్యం') ||
+      lowerMsg.includes('టాంపరింగ్') ||
+      lowerMsg.includes('tamper')
+    ) {
+      return {
+        reply:
+          `TheftGuard AI మీటర్ రీడింగ్‌లలో లేదా బిల్లులో వ్యత్యాసాలను కేవలం సాంకేతిక పరిశీలనగా మాత్రమే పరిగణిస్తుంది. ఇది దొంగతనం లేదా ఉల్లంఘన అని నిర్ధారించదు.\n\n` +
+          `**బిల్లు పెరగడానికి సాధారణ కారణాలు:**\n` +
+          `• వేసవిలో AC వాడకం లేదా శీతాకాలంలో గీజర్ వాడకం పెరగడం.\n` +
+          `• బిల్లింగ్ రోజుల సంఖ్య పెరగడం (30 రోజులకు బదులు 35 రోజులు బిల్లు వేయడం).\n` +
+          `• టారిఫ్ స్లాబ్ మారడం వల్ల యూనిట్ ధర పెరగడం.\n` +
+          `• మీటర్ రీడర్ రీడింగ్‌ను తప్పుగా నమోదు చేయడం.\n\n` +
+          `**మీటర్ సరిగ్గా పనిచేస్తోందో లేదో చూడటానికి (క్రీప్ టెస్ట్):**\n` +
+          `ఇంట్లోని అన్ని స్విచ్‌లు ఆపివేసినప్పుడు మీటర్ పల్స్ (LED బ్లింక్) ఆగాలి. స్విచ్‌లు ఆపినా మీటర్ వేగంగా తిరుగుతుంటే మీటర్ లోపం ఉండవచ్చు; అప్పుడు మీ విద్యుత్ పంపిణీ సంస్థ (TGSPDCL / TSNPDCL) అధికారులకు ఫిర్యాదు చేసి మీటర్ టెస్టింగ్ కోరవచ్చు.`,
+        provider: 'local_rule_engine',
+        structured_analysis: analysis,
+        suggestions: [
+          'క్రీప్ టెస్ట్ అంటే ఏమిటి?',
+          'ఈ నెల నా బిల్లు ఎందుకు పెరిగింది?',
+          'టారిఫ్ స్లాబ్‌లు ఎలా పనిచేస్తాయి?',
+        ],
+        disclaimers,
+      }
+    }
+
+    // 6. Greetings
+    if (
+      words.has('hello') ||
+      words.has('hi') ||
+      words.has('నమస్కారం') ||
+      words.has('హలో') ||
+      lowerMsg.includes('నమస్తే')
+    ) {
+      return {
+        reply:
+          `నమస్కారం! నేను TheftGuard AI అసిస్టెంట్‌ని. మీ విద్యుత్ బిల్లులు, యూనిట్ల వినియోగం (kWh), మరియు గృహోపకరణాల విద్యుత్ వాడకాన్ని విశ్లేషించడంలో నేను మీకు సహాయపడతాను.\n\n` +
+          `మీరు ఏ ప్రశ్న అయినా అడగవచ్చు:\n` +
+          `• 'kWh అంటే ఏమిటి?'\n` +
+          `• 'ఈ నెల నా బిల్లు ఎందుకు పెరిగింది?'\n` +
+          `• 'ఏసీ 8 గంటలు వాడితే ఎంత కరెంట్ కాలుతుంది?'\n` +
+          `• 'తర్వాత నేను ఏమి చేయాలి?'`,
+        provider: 'local_rule_engine',
+        structured_analysis: analysis,
+        suggestions: [
+          'kWh అంటే ఏమిటి?',
+          'ఈ నెల నా బిల్లు ఎందుకు పెరిగింది?',
+          'ఏసీ 8 గంటలు వాడితే ఎంత కరెంట్ కాలుతుంది?',
+        ],
+        disclaimers,
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // LOCALIZED INTENT HANDLERS (HINDI)
+  // ---------------------------------------------------------------------------
+  if (isHindi) {
+    // 1. Definition of kWh
+    if (
+      lowerMsg.includes('kwh') ||
+      lowerMsg.includes('किलोवाट') ||
+      lowerMsg.includes('यूनिट') ||
+      lowerMsg.includes('power vs energy')
+    ) {
+      return {
+        reply:
+          `### kWh (किलोवाट-घंटा) का क्या अर्थ है?\n\n` +
+          `**kWh** का अर्थ **किलोवाट-घंटा** है, जिसे बोलचाल में **'यूनिट' (Unit)** कहा जाता है।\n\n` +
+          `• **1 kWh = 1 यूनिट बिजली**।\n` +
+          `• **उदाहरण**: 1000 वाट का उपकरण (जैसे 1 kW हीटर या गीज़र) यदि 1 घंटे तक लगातार चलता है, तो 1 यूनिट (1 kWh) बिजली की खपत होती है।\n\n` +
+          `**पावर (kW) और ऊर्जा (kWh) में अंतर:**\n` +
+          `• **kW (किलोवाट)**: उपकरण की बिजली क्षमता (Power) को दर्शाता है।\n` +
+          `• **kWh (यूनिट)**: उस उपकरण द्वारा उपयोग की गई कुल बिजली (Energy) को मापता है।\n\n` +
+          `**मीटर डिस्प्ले**: आपके डिजिटल मीटर पर 'kWh' के आगे दिखने वाली संख्या कुल उपभोग की गई यूनिट्स को दर्शाती है।`,
+        provider: 'local_rule_engine',
+        structured_analysis: analysis,
+        suggestions: [
+          'इस महीने मेरा बिजली बिल क्यों बढ़ा?',
+          '8 घंटे में एसी कितनी बिजली खपत करता है?',
+          'टैरिफ स्लैब कैसे काम करते हैं?',
+        ],
+        disclaimers,
+      }
+    }
+
+    // 2. Webpage Explanation
+    if (
+      lowerMsg.includes('webpage') ||
+      lowerMsg.includes('वेबपेज') ||
+      lowerMsg.includes('यह पेज') ||
+      lowerMsg.includes('समझाएं')
+    ) {
+      return {
+        reply:
+          `### TheftGuard AI वेबपेज का परिचय\n\n` +
+          `TheftGuard AI बिजली उपभोक्ताओं और वितरण कंपनियों (DISCOMs) के लिए बनाया गया एक पारदर्शी मंच है।\n\n` +
+          `**मुख्य अनुभाग:**\n` +
+          `1. **ओवरव्यू (Overview)**: आपकी बिजली खपत और मुख्य मेट्रिक्स का सारांश।\n` +
+          `2. **बिल तुलना (Bill Comparison)**: लगातार दो महीनों के बिलों की तुलना करके यूनिट, दैनिक खपत और खर्च का अंतर समझना।\n` +
+          `3. **बिल अपलोड (Bill Upload - OCR)**: स्पॉट बिलिंग रसीद को स्कैन करके रीडिंग की स्वतः पुष्टि करना।\n` +
+          `4. **जांच (Investigations)**: मीटर विसंगतियों और भौतिक निरीक्षण का रिकॉर्ड।\n` +
+          `5. **AI चैट (AI Chat)**: बिजली बिलों, उपकरणों के लोड और टैरिफ स्लैब के बारे में सहायता प्राप्त करना।`,
+        provider: 'local_rule_engine',
+        structured_analysis: analysis,
+        suggestions: [
+          'बिल तुलना खोलें',
+          'kWh का क्या अर्थ है?',
+          'आगे क्या करें?',
+        ],
+        disclaimers,
+      }
+    }
+
+    // 3. AC Consumption
+    if (
+      lowerMsg.includes('ac') ||
+      lowerMsg.includes('एसी') ||
+      lowerMsg.includes('एयर कंडीशनर')
+    ) {
+      const { hours } = extractApplianceNumbers(message)
+      const h = hours != null ? hours : 8
+      const dailyKwh = (h * 0.975).toFixed(2)
+      const monthlyKwh = (dailyKwh * 30).toFixed(0)
+      const monthlyCost = (monthlyKwh * 7).toFixed(0)
+
+      return {
+        reply:
+          `### एयर कंडीशनर (AC) बिजली खपत अनुमान (${h} घंटे/दिन)\n\n` +
+          `• **दैनिक खपत**: लगभग **${dailyKwh} kWh (${dailyKwh} यूनिट)** (${h} घंटे, 1.5 टन 3-स्टार इन्वर्टर एसी, 24°C पर)।\n` +
+          `• **मासिक खपत**: लगभग **${monthlyKwh} यूनिट/माह** (30 दिनों में)।\n` +
+          `• **अनुमानित मासिक लागत**: लगभग **₹${monthlyCost}** (औसतन ₹7/यूनिट की दर से)।\n\n` +
+          `💡 **बचत सुझाव:**\n` +
+          `1. एसी को 18°C के बजाय **24°C** पर चलाने से 20% से 24% तक बिजली की बचत होती है।\n` +
+          `2. हर 2 सप्ताह में फिल्टर साफ करने से कंप्रेसर पर लोड कम होता है।\n` +
+          `3. कमरे के दरवाजे और खिड़कियां ठीक से बंद रखें।`,
+        provider: 'local_rule_engine',
+        structured_analysis: analysis,
+        suggestions: [
+          'गीज़र कितनी बिजली खपत करता है?',
+          'टैरिफ स्लैब कैसे काम करते हैं?',
+          'मीटर की सटीकता कैसे जांचें?',
+        ],
+        disclaimers,
+      }
+    }
+
+    // 4. Next steps
+    if (
+      lowerMsg.includes('next') ||
+      lowerMsg.includes('आगे') ||
+      lowerMsg.includes('क्या करें')
+    ) {
+      return {
+        reply:
+          `### आगे आप क्या कर सकते हैं?\n\n` +
+          `1. [बिल तुलना](/app/bill-comparison) पृष्ठ पर जाएं और पिछले दो महीनों के बिल दर्ज करें।\n` +
+          `2. घरेलू उपकरण प्रश्नावली भरें ताकि पता चल सके कि कौन सा उपकरण कितनी बिजली की खपत कर रहा है।\n` +
+          `3. [बिल अपलोड](/app/bill-upload) के माध्यम से रसीद स्कैन करके रीडिंग की सटीकता की जांच करें।`,
+        provider: 'local_rule_engine',
+        structured_analysis: analysis,
+        suggestions: [
+          'बिल तुलना शुरू करें',
+          'kWh का क्या अर्थ है?',
+          '8 घंटे में एसी कितनी बिजली खपत करता है?',
+        ],
+        disclaimers,
+      }
+    }
+
+    // 5. Theft Inquiry
+    if (
+      lowerMsg.includes('theft') ||
+      lowerMsg.includes('चोरी') ||
+      lowerMsg.includes('छेड़छाड़') ||
+      lowerMsg.includes('tamper')
+    ) {
+      return {
+        reply:
+          `TheftGuard AI बिजली बिल में किसी भी उतार-चढ़ाव को केवल तकनीकी समीक्षा के रूप में देखता है। यह चोरी या छेड़छाड़ का निष्कर्ष नहीं है।\n\n` +
+          `**बिल बढ़ने के सामान्य कारण:**\n` +
+          `• मौसम के अनुसार एसी या गीज़र का अधिक उपयोग।\n` +
+          `• बिलिंग दिनों की संख्या में वृद्धि (उदा. 30 के बजाय 35 दिन का बिल)।\n` +
+          `• टैरिफ स्लैब पार करने से प्रति यूनिट दर बढ़ना।\n` +
+          `• मीटर रीडर द्वारा रीडिंग दर्ज करने में मानवीय त्रुटि।\n\n` +
+          `**क्रीप टेस्ट (Creep Test)**: घर के सभी मुख्य स्विच बंद करने पर मीटर की पल्स (LED ब्लिंक) पूरी तरह बंद होनी चाहिए। यदि स्विच बंद होने पर भी मीटर चलता है, तो मीटर में तकनीकी खराबी हो सकती है; इसके लिए आप अपनी बिजली वितरण कंपनी (DISCOM) में मीटर परीक्षण का अनुरोध कर सकते हैं।`,
+        provider: 'local_rule_engine',
+        structured_analysis: analysis,
+        suggestions: [
+          'क्रीप टेस्ट क्या है?',
+          'इस महीने मेरा बिल क्यों बढ़ा?',
+          'टैरिफ स्लैब कैसे काम करते हैं?',
+        ],
+        disclaimers,
+      }
+    }
+
+    // 6. Greetings
+    if (
+      words.has('hello') ||
+      words.has('hi') ||
+      words.has('नमस्ते') ||
+      words.has('नमस्कार')
+    ) {
+      return {
+        reply:
+          `नमस्ते! मैं TheftGuard AI सहायक हूँ। मैं आपके बिजली बिल, यूनिट खपत (kWh) और घरेलू उपकरणों की बिजली खपत का विश्लेषण करने में आपकी सहायता कर सकता हूँ।\n\n` +
+          `आप मुझसे पूछ सकते हैं:\n` +
+          `• 'kWh का क्या अर्थ है?'\n` +
+          `• 'इस महीने मेरा बिल क्यों बढ़ा?'\n` +
+          `• 'एसी 8 घंटे चलने पर कितनी बिजली खपत करता है?'\n` +
+          `• 'मुझे आगे क्या करना चाहिए?'`,
+        provider: 'local_rule_engine',
+        structured_analysis: analysis,
+        suggestions: [
+          'kWh का क्या अर्थ है?',
+          'इस महीने मेरा बिल क्यों बढ़ा?',
+          '8 घंटे में एसी कितनी बिजली खपत करता है?',
+        ],
+        disclaimers,
+      }
+    }
+  }
 
   // ---------------------------------------------------------------------------
   // PLUGIN-GUIDED INTENTS: If specific domain plugins are active
@@ -1592,9 +1954,10 @@ export async function chatWithAssistant({
   forceOffline = false,
   signal = null,
   activePlugins = [],
+  language = 'en',
 }) {
   if (forceOffline) {
-    return generateClientRuleResponse(message, billContext, questionnaireAnswers, history, activePlugins)
+    return generateClientRuleResponse(message, billContext, questionnaireAnswers, history, activePlugins, language)
   }
 
   try {
@@ -1605,6 +1968,7 @@ export async function chatWithAssistant({
         questionnaire_answers: questionnaireAnswers,
         history,
         active_plugins: activePlugins,
+        language,
       },
       { signal }
     )
@@ -1615,7 +1979,7 @@ export async function chatWithAssistant({
     }
     // Graceful offline fallback
     console.info('Backend assistant unavailable; falling back to local client rule engine:', err.message)
-    const local = generateClientRuleResponse(message, billContext, questionnaireAnswers, history, activePlugins)
+    const local = generateClientRuleResponse(message, billContext, questionnaireAnswers, history, activePlugins, language)
     return {
       ...local,
       provider: 'client_rule_engine (offline fallback)',

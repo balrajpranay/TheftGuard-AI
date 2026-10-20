@@ -14,6 +14,7 @@ import BillUpload from './pages/BillUpload'
 import BillComparison from './pages/BillComparison'
 import ModelInfo from './pages/ModelInfo'
 import AIChatWorkspace from './pages/AIChatWorkspace'
+import Settings from './pages/Settings'
 import NotFound from './pages/NotFound'
 
 export default function App() {
@@ -36,6 +37,7 @@ export default function App() {
         <Route path="reports" element={<Reports />} />
         <Route path="chat" element={<AIChatWorkspace />} />
         <Route path="model" element={<ModelInfo />} />
+        <Route path="settings" element={<Settings />} />
       </Route>
       </Route>
       <Route path="*" element={<NotFound />} />

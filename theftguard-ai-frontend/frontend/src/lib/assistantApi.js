@@ -31,6 +31,10 @@ export function sanitizeAssistantRequest(payload) {
     message: String(payload.message || '').trim().slice(0, 1500),
   }
 
+  if (payload.language && ['en', 'hi', 'te'].includes(payload.language)) {
+    sanitized.language = payload.language
+  }
+
   if (payload.bill_context) {
     const b = payload.bill_context
     sanitized.bill_context = {
