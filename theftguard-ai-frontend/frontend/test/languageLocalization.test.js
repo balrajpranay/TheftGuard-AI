@@ -78,6 +78,36 @@ describe('Language & Localization — Dictionary Integrity & Fallback', () => {
     assert.equal(t('nav.settings', 'te'), 'సెట్టింగ్‌లు')
   })
 
+  it('translates landing and dashboard plain-language guidance across all 3 languages', () => {
+    // Check Landing guidance keys
+    const landingKeys = ['tagline', 'threeJobsTitle', 'job1Title', 'job2Title', 'job3Title', 'responsibleUseTitle', 'signInAccount']
+    for (const key of landingKeys) {
+      const enVal = t(`landing.${key}`, 'en')
+      const hiVal = t(`landing.${key}`, 'hi')
+      const teVal = t(`landing.${key}`, 'te')
+
+      assert.ok(typeof enVal === 'string' && enVal.length > 0, `en landing.${key} must exist`)
+      assert.ok(typeof hiVal === 'string' && hiVal.length > 0, `hi landing.${key} must exist`)
+      assert.ok(typeof teVal === 'string' && teVal.length > 0, `te landing.${key} must exist`)
+      assert.notEqual(hiVal, enVal, `hi landing.${key} should differ from English`)
+      assert.notEqual(teVal, enVal, `te landing.${key} should differ from English`)
+    }
+
+    // Check Dashboard quick start and metric helpers
+    const dashKeys = ['gettingStartedTitle', 'step1Title', 'step2Title', 'step3Title', 'reviewRecommendedHint', 'elevatedHint', 'medianModelScoreHint']
+    for (const key of dashKeys) {
+      const enVal = t(`dashboard.${key}`, 'en')
+      const hiVal = t(`dashboard.${key}`, 'hi')
+      const teVal = t(`dashboard.${key}`, 'te')
+
+      assert.ok(typeof enVal === 'string' && enVal.length > 0, `en dashboard.${key} must exist`)
+      assert.ok(typeof hiVal === 'string' && hiVal.length > 0, `hi dashboard.${key} must exist`)
+      assert.ok(typeof teVal === 'string' && teVal.length > 0, `te dashboard.${key} must exist`)
+      assert.notEqual(hiVal, enVal, `hi dashboard.${key} should differ from English`)
+      assert.notEqual(teVal, enVal, `te dashboard.${key} should differ from English`)
+    }
+  })
+
   it('interpolates dynamic parameters correctly in translation strings', () => {
     const resEn = t('topBanner.authText', 'en', { name: 'Aditi Sharma' })
     assert.ok(resEn.includes('Aditi Sharma'))

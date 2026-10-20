@@ -22,7 +22,7 @@ test.describe('TheftGuard AI — Language Support & Localization E2E Tests', () 
 
     // Verify Telugu translations rendered
     await expect(page.getByRole('link', { name: 'ఇది ఎలా పనిచేస్తుంది' })).toBeVisible()
-    await expect(page.getByRole('link', { name: 'సైన్ ఇన్' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'సైన్ ఇన్', exact: true })).toBeVisible()
 
     // Switch to Hindi
     await page.getByRole('button', { name: /Language: తెలుగు|తెలుగు/i }).click()
@@ -30,7 +30,7 @@ test.describe('TheftGuard AI — Language Support & Localization E2E Tests', () 
 
     // Verify Hindi translations rendered
     await expect(page.getByRole('link', { name: 'यह कैसे काम करता है' })).toBeVisible()
-    await expect(page.getByRole('link', { name: 'साइन इन' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'साइन इन', exact: true })).toBeVisible()
   })
 
   test('2. Language selector on Sign In page translates forms and labels', async ({ page }) => {

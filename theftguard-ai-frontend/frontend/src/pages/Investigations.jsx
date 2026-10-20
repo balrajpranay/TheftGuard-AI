@@ -86,7 +86,7 @@ export default function Investigations() {
             </div>
           }
         >
-          Open a customer in Results, or a large decrease in Comparison, and choose Add to investigation.
+          Investigation tickets track physical meter audits, seal verification, and field inspection notes. To start an investigation, open any customer record in Results or Comparison and choose &quot;Add to investigation&quot;.
         </EmptyState>
       ) : (
         <div className="grid gap-5 lg:grid-cols-[2fr_3fr]">

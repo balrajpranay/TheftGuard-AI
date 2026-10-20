@@ -4,6 +4,7 @@ import { Bar, BarChart, CartesianGrid, Cell, LabelList, Line, LineChart, Respons
 import { Badge, Button, CategoryBadge, DemoBadge, EmptyState, PageHeader, Panel, ScoreScale } from '../components/ui'
 import { useAppState } from '../state/AppState'
 import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../context/LanguageContext'
 import { CATEGORIES, classify } from '../lib/risk'
 import { monthlyTotals } from '../lib/compare'
 import { MODEL_FACTS } from '../data/modelFacts'
@@ -25,6 +26,7 @@ function median(values) {
 export default function Dashboard() {
   const { customers, source, hasScores, thresholds, comparison, investigations, dbConnected, dbError } = useAppState()
   const { isDemoMode } = useAuth()
+  const { t } = useLanguage()
   const isDemo = isDemoMode || source === 'demo'
 
   const stats = useMemo(() => {
@@ -46,7 +48,7 @@ export default function Dashboard() {
   return (
     <>
       <PageHeader
-        title="Overview"
+        title={t('dashboard.title')}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             {isDemoMode ? (
@@ -58,27 +60,60 @@ export default function Dashboard() {
             ) : (
               <Badge tone="outline">Connecting...</Badge>
             )}
-            <Button to="/app/screening" variant="primary" icon="upload">Screen a file</Button>
-            <Button to="/app/bill-comparison" icon="file">Compare bills</Button>
-            <Button to="/app/comparison" icon="compare">Compare consumption</Button>
+            <Button to="/app/screening" variant="primary" icon="upload">{t('dashboard.screenFile')}</Button>
+            <Button to="/app/bill-comparison" icon="file">{t('dashboard.compareBills')}</Button>
+            <Button to="/app/comparison" icon="compare">{t('dashboard.compareConsumption')}</Button>
           </div>
         }
       >
-        {isDemoMode
-          ? 'A summary of the screening results and consumption comparison currently loaded in this demonstration workspace.'
-          : 'A summary of the screening results and consumption comparison currently loaded in your authenticated workspace.'}
+        {isDemoMode ? t('dashboard.subtitleDemo') : t('dashboard.subtitleAuth')}
       </PageHeader>
+
+      {/* Quick Start Guide for New Users */}
+      <div className="mb-5 rounded border border-gold/40 bg-pale/70 p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-0.5">
+            <p className="text-xs font-bold uppercase tracking-wider text-amber-950">
+              {t('dashboard.gettingStartedTitle')}
+            </p>
+            <p className="text-xs text-ink/80">
+              {t('dashboard.step1Title')}: {t('dashboard.step1Desc')}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              to="/app/chat"
+              className="inline-flex items-center gap-1.5 rounded bg-gold px-2.5 py-1 text-xs font-bold text-ink shadow-2xs hover:bg-[#E0B220] transition-colors"
+            >
+              <span>⚡</span> {t('dashboard.openChat')}
+            </Link>
+            <Link
+              to="/app/bill-comparison"
+              className="inline-flex items-center gap-1.5 rounded border border-line bg-white px-2.5 py-1 text-xs font-semibold text-ink hover:bg-slate-50 transition-colors"
+            >
+              <span>📄</span> {t('dashboard.compareBills')}
+            </Link>
+            <Link
+              to="/app/screening"
+              className="inline-flex items-center gap-1.5 rounded border border-line bg-white px-2.5 py-1 text-xs font-semibold text-ink hover:bg-slate-50 transition-colors"
+            >
+              <span>📊</span> {t('dashboard.screenFile')}
+            </Link>
+          </div>
+        </div>
+      </div>
 
       <section aria-label="Summary" className="grid grid-cols-2 divide-line rounded border border-line bg-white md:grid-cols-4 md:divide-x">
         {[
-          ['Customers in results', customers.length.toLocaleString('en-IN')],
-          ['Review Recommended', stats.counts.review.toLocaleString('en-IN')],
-          ['Elevated', stats.counts.elevated.toLocaleString('en-IN')],
-          ['Median Model Score', stats.median === null ? '—' : fmtScore(stats.median)],
-        ].map(([k, v], i) => (
+          [t('dashboard.customersInResults'), customers.length.toLocaleString('en-IN'), null],
+          [t('dashboard.reviewRecommended'), stats.counts.review.toLocaleString('en-IN'), t('dashboard.reviewRecommendedHint')],
+          [t('dashboard.elevated'), stats.counts.elevated.toLocaleString('en-IN'), t('dashboard.elevatedHint')],
+          [t('dashboard.medianModelScore'), stats.median === null ? '—' : fmtScore(stats.median), t('dashboard.medianModelScoreHint')],
+        ].map(([k, v, hint], i) => (
           <div key={k} className={`px-4 py-4 ${i > 1 ? 'border-t border-line md:border-t-0' : ''}`}>
             <p className="text-sm text-muted">{k}</p>
             <p className="mt-1 font-display text-3xl font-bold">{v}</p>
+            {hint ? <p className="mt-1 text-[11px] text-muted">{hint}</p> : null}
           </div>
         ))}
         <p className="col-span-2 border-t border-line px-4 py-2 text-xs text-muted md:col-span-4">
@@ -95,7 +130,13 @@ export default function Dashboard() {
       </section>
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[3fr_2fr]">
-        <Panel title="Review categories" subtitle={`Display bands: Elevated from ${thresholds.elevated.toFixed(2)}, Review Recommended from ${thresholds.review.toFixed(2)}`}>
+        <Panel
+          title={t('dashboard.reviewCategories')}
+          subtitle={t('dashboard.reviewCategoriesSub', {
+            elevated: thresholds.elevated.toFixed(2),
+            review: thresholds.review.toFixed(2),
+          })}
+        >
           <figure aria-label="Number of customers in each review category">
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -117,12 +158,17 @@ export default function Dashboard() {
           </figure>
         </Panel>
 
-        <Panel title="Model Score distribution" subtitle="Customers per 0.1 score band; gold bands are in the review range">
+        <Panel title={t('dashboard.modelScoreDistribution')} subtitle={t('dashboard.modelScoreDistributionSub')}>
           {stats.median === null ? (
-            <EmptyState title="No Model Scores yet">
-              {hasScores
-                ? 'No valid scores were produced from the screened file.'
-                : 'Scores appear here when a file has been screened with the ML service.'}
+            <EmptyState
+              title={t('dashboard.noScoresTitle')}
+              action={
+                <Button to="/app/screening" size="sm" variant="primary">
+                  {t('dashboard.goToScreening')}
+                </Button>
+              }
+            >
+              {t('dashboard.noScoresDesc')}
             </EmptyState>
           ) : (
             <figure aria-label="Distribution of Model Scores">
@@ -147,13 +193,20 @@ export default function Dashboard() {
 
       <Panel
         className="mt-5"
-        title="Monthly consumption"
-        subtitle={`${comparison.label}. Total kWh across the customers in the loaded comparison file.`}
+        title={t('dashboard.monthlyConsumption')}
+        subtitle={t('dashboard.monthlyConsumptionSub', { label: comparison.label })}
         actions={comparison.isDemo ? <DemoBadge /> : null}
       >
         {monthly.length === 0 ? (
-          <EmptyState title="No consumption data loaded" action={<Button to="/app/comparison" variant="primary">Open comparison</Button>}>
-            Load a kWh file or the demonstration data in Comparison to see monthly totals.
+          <EmptyState
+            title={t('dashboard.noConsumptionTitle')}
+            action={
+              <Button to="/app/comparison" variant="primary">
+                {t('dashboard.openComparison')}
+              </Button>
+            }
+          >
+            {t('dashboard.noConsumptionDesc')}
           </EmptyState>
         ) : (
           <figure aria-label="Monthly total consumption in kWh">
@@ -174,9 +227,21 @@ export default function Dashboard() {
       </Panel>
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[3fr_2fr]">
-        <Panel title="Highest Model Scores" actions={<Link to="/app/results" className="text-sm font-medium underline underline-offset-2">All results</Link>} bodyClassName="p-0">
+        <Panel
+          title={t('dashboard.highestScores')}
+          actions={
+            <Link to="/app/results" className="text-sm font-medium underline underline-offset-2">
+              {t('dashboard.allResults')}
+            </Link>
+          }
+          bodyClassName="p-0"
+        >
           {stats.top.length === 0 ? (
-            <div className="p-4"><EmptyState title="No scored customers">Run screening with the ML service to see the highest scores.</EmptyState></div>
+            <div className="p-4">
+              <EmptyState title={t('dashboard.highestScoresEmpty')}>
+                {t('dashboard.noScoresDesc')}
+              </EmptyState>
+            </div>
           ) : (
             <table className="w-full text-left text-sm">
               <caption className="sr-only">Customers with the highest Model Scores</caption>
@@ -204,7 +269,7 @@ export default function Dashboard() {
 
         <div className="space-y-5">
           <Panel
-            title="Investigation queue"
+            title={t('dashboard.investigationQueue')}
             subtitle={
               isDemoMode
                 ? 'Local demo queue'
@@ -214,10 +279,23 @@ export default function Dashboard() {
                     ? `Persistence offline (${dbError})`
                     : 'Connecting to database...'
             }
-            actions={<Link to="/app/investigations" className="text-sm font-medium underline underline-offset-2">Open</Link>}
+            actions={
+              <Link to="/app/investigations" className="text-sm font-medium underline underline-offset-2">
+                {t('dashboard.openInvestigations')}
+              </Link>
+            }
           >
             {investigations.length === 0 ? (
-              <EmptyState title="No investigations yet">Add a customer from Results or Comparison to start a list.</EmptyState>
+              <EmptyState
+                title={t('dashboard.noInvestigationsTitle')}
+                action={
+                  <Button to="/app/investigations" size="sm">
+                    {t('dashboard.openInvestigations')}
+                  </Button>
+                }
+              >
+                {t('dashboard.noInvestigationsDesc')}
+              </EmptyState>
             ) : (
               <dl className="divide-y divide-line text-sm">
                 {byStatus.map((s) => (
@@ -226,13 +304,20 @@ export default function Dashboard() {
               </dl>
             )}
           </Panel>
-          <Panel title="What the model can say" actions={<Link to="/app/model" className="text-sm font-medium underline underline-offset-2">Details</Link>}>
+          <Panel
+            title={t('dashboard.modelCapabilities')}
+            actions={
+              <Link to="/app/model" className="text-sm font-medium underline underline-offset-2">
+                {t('dashboard.details')}
+              </Link>
+            }
+          >
             <dl className="divide-y divide-line text-sm">
               <div className="flex justify-between py-1.5"><dt>Precision</dt><dd className="font-semibold">{m.precision.toFixed(2)}</dd></div>
               <div className="flex justify-between py-1.5"><dt>Recall</dt><dd className="font-semibold">{m.recall.toFixed(2)}</dd></div>
               <div className="flex justify-between py-1.5"><dt>ROC-AUC</dt><dd className="font-semibold">{m.roc.toFixed(2)}</dd></div>
             </dl>
-            <p className="mt-2 text-xs text-muted">Test results on one random split of a dataset with unconfirmed provenance. A flag recommends review and is not proof of theft.</p>
+            <p className="mt-2 text-xs text-muted">{t('dashboard.modelCapabilitiesNote')}</p>
           </Panel>
         </div>
       </div>
