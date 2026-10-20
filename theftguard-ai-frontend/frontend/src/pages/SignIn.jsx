@@ -202,7 +202,7 @@ export default function SignIn() {
           aria-selected={mode === 'signin'}
           type="button"
           onClick={() => switchMode('signin')}
-          className={`flex-1 rounded py-2 text-sm font-semibold transition-colors cursor-pointer ${
+          className={`flex-1 rounded py-2.5 text-sm font-semibold transition-colors cursor-pointer min-h-[44px] flex items-center justify-center ${
             mode === 'signin' ? 'bg-ink text-white shadow-xs' : 'text-muted hover:text-ink'
           }`}
         >
@@ -213,7 +213,7 @@ export default function SignIn() {
           aria-selected={mode === 'register'}
           type="button"
           onClick={() => switchMode('register')}
-          className={`flex-1 rounded py-2 text-sm font-semibold transition-colors cursor-pointer ${
+          className={`flex-1 rounded py-2.5 text-sm font-semibold transition-colors cursor-pointer min-h-[44px] flex items-center justify-center ${
             mode === 'register' ? 'bg-ink text-white shadow-xs' : 'text-muted hover:text-ink'
           }`}
         >
@@ -221,7 +221,7 @@ export default function SignIn() {
         </button>
       </div>
 
-      <h1 className="text-3xl font-bold tracking-tight">
+      <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
         {mode === 'signin' ? t('auth.signInTitle') : t('auth.createAccountTitle')}
       </h1>
       <p className="mt-1 text-sm text-muted">

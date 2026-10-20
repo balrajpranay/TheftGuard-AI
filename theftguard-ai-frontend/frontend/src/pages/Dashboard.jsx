@@ -110,9 +110,9 @@ export default function Dashboard() {
           [t('dashboard.elevated'), stats.counts.elevated.toLocaleString('en-IN'), t('dashboard.elevatedHint')],
           [t('dashboard.medianModelScore'), stats.median === null ? '—' : fmtScore(stats.median), t('dashboard.medianModelScoreHint')],
         ].map(([k, v, hint], i) => (
-          <div key={k} className={`px-4 py-4 ${i > 1 ? 'border-t border-line md:border-t-0' : ''}`}>
-            <p className="text-sm text-muted">{k}</p>
-            <p className="mt-1 font-display text-3xl font-bold">{v}</p>
+          <div key={k} className={`px-3 sm:px-4 py-4 ${i > 1 ? 'border-t border-line md:border-t-0' : ''}`}>
+            <p className="text-xs sm:text-sm text-muted">{k}</p>
+            <p className="mt-1 font-display text-2xl sm:text-3xl font-bold">{v}</p>
             {hint ? <p className="mt-1 text-[11px] text-muted">{hint}</p> : null}
           </div>
         ))}
@@ -243,27 +243,29 @@ export default function Dashboard() {
               </EmptyState>
             </div>
           ) : (
-            <table className="w-full text-left text-sm">
-              <caption className="sr-only">Customers with the highest Model Scores</caption>
-              <thead className="border-b border-line text-muted">
-                <tr>
-                  <th scope="col" className="px-4 py-2 font-medium">Customer</th>
-                  <th scope="col" className="px-4 py-2 font-medium">Model Score</th>
-                  <th scope="col" className="hidden px-4 py-2 font-medium sm:table-cell">Category</th>
-                </tr>
-              </thead>
-              <tbody>
-                {stats.top.map((c) => (
-                  <tr key={c.id} className="border-b border-line last:border-0">
-                    <th scope="row" className="px-4 py-2.5 font-medium">
-                      <Link to={`/app/results?q=${encodeURIComponent(c.id)}`} className="underline-offset-2 hover:underline">{c.id}</Link>
-                    </th>
-                    <td className="px-4 py-2.5"><div className="flex items-center gap-3"><span className="w-12">{fmtScore(c.score)}</span><ScoreScale score={c.score} thresholds={thresholds} /></div></td>
-                    <td className="hidden px-4 py-2.5 sm:table-cell"><CategoryBadge category={classify(c.score, thresholds)} /></td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm min-w-[280px]">
+                <caption className="sr-only">Customers with the highest Model Scores</caption>
+                <thead className="border-b border-line text-muted">
+                  <tr>
+                    <th scope="col" className="px-4 py-2 font-medium">Customer</th>
+                    <th scope="col" className="px-4 py-2 font-medium">Model Score</th>
+                    <th scope="col" className="hidden px-4 py-2 font-medium sm:table-cell">Category</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {stats.top.map((c) => (
+                    <tr key={c.id} className="border-b border-line last:border-0">
+                      <th scope="row" className="px-4 py-2.5 font-medium">
+                        <Link to={`/app/results?q=${encodeURIComponent(c.id)}`} className="underline-offset-2 hover:underline">{c.id}</Link>
+                      </th>
+                      <td className="px-4 py-2.5"><div className="flex items-center gap-3"><span className="w-12">{fmtScore(c.score)}</span><ScoreScale score={c.score} thresholds={thresholds} /></div></td>
+                      <td className="hidden px-4 py-2.5 sm:table-cell"><CategoryBadge category={classify(c.score, thresholds)} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </Panel>
 

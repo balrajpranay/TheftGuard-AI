@@ -529,7 +529,7 @@ export default function AIChatWorkspace() {
   const lastAssistantIndex = messages.map((m) => m.role).lastIndexOf('assistant')
 
   return (
-    <div className="flex h-[calc(100vh-8.5rem)] min-h-[580px] w-full rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+    <div className="flex h-[calc(100dvh-7.5rem)] sm:h-[calc(100vh-8.5rem)] min-h-[480px] sm:min-h-[580px] w-full rounded-xl sm:rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
       {/* Desktop Persistent Sidebar */}
       <div className="hidden lg:block w-72 shrink-0 h-full">
         <ChatSidebar
@@ -553,7 +553,7 @@ export default function AIChatWorkspace() {
             onClick={() => setMobileSidebarOpen(false)}
             aria-hidden="true"
           />
-          <div className="relative w-72 max-w-[80vw] h-full bg-white shadow-2xl z-10">
+          <div className="relative w-72 max-w-[85vw] h-full bg-white shadow-2xl z-10">
             <ChatSidebar
               sessions={sessions}
               activeSessionId={activeSessionId}
@@ -573,12 +573,12 @@ export default function AIChatWorkspace() {
       {/* Main Chat Panel */}
       <div className="flex min-w-0 flex-1 flex-col h-full bg-mist/30">
         {/* Top Header Bar */}
-        <header className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-6">
-          <div className="flex items-center gap-3 min-w-0">
+        <header className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-3 sm:px-6">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <button
               type="button"
               onClick={() => setMobileSidebarOpen(true)}
-              className="lg:hidden rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
+              className="lg:hidden rounded-lg p-2 text-slate-500 hover:bg-slate-100 min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer"
               aria-label="Toggle conversation history"
             >
               <Icon name="menu" className="h-5 w-5" />

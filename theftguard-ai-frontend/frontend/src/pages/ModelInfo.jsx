@@ -18,7 +18,7 @@ export default function ModelInfo() {
             <div className="flex justify-between gap-4 py-2"><dt className="text-muted">Output</dt><dd className="text-right">Model Score (vote fraction for FLAG = 1)</dd></div>
             <div className="flex justify-between gap-4 py-2"><dt className="text-muted">Default threshold</dt><dd>{MODEL_FACTS.threshold.toFixed(2)}</dd></div>
             <div className="flex justify-between gap-4 py-2"><dt className="text-muted">Stored scikit-learn version</dt><dd>{MODEL_FACTS.storedSklearn}</dd></div>
-            <div className="flex justify-between gap-4 py-2"><dt className="shrink-0 text-muted">File fingerprint (SHA-256)</dt><dd className="break-all text-right text-xs">{MODEL_FACTS.sha256}</dd></div>
+            <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-4 py-2"><dt className="shrink-0 text-muted">File fingerprint (SHA-256)</dt><dd className="break-all sm:text-right text-xs font-mono">{MODEL_FACTS.sha256}</dd></div>
           </dl>
         </Panel>
 

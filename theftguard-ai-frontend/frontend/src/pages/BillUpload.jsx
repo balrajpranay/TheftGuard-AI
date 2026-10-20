@@ -339,7 +339,7 @@ export default function BillUpload() {
             <input
               ref={inputRef}
               type="file"
-              accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf"
+              accept=".jpg,.jpeg,.png,.pdf,image/*,application/pdf"
               className="sr-only"
               id="bill-file-input"
               aria-label="Upload electricity bill file"
@@ -358,7 +358,7 @@ export default function BillUpload() {
                   setDragging(false)
                   handleFileSelection(e.dataTransfer.files?.[0])
                 }}
-                className={`rounded border-2 border-dashed px-6 py-10 text-center transition-colors ${
+                className={`rounded border-2 border-dashed px-4 py-8 sm:px-6 sm:py-10 text-center transition-colors ${
                   dragging ? 'border-ink bg-pale' : 'border-line bg-mist/50 hover:bg-mist'
                 }`}
               >

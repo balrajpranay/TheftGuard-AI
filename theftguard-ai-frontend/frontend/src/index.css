@@ -4,8 +4,10 @@
 
 @layer base {
   html { scroll-behavior: smooth; }
+  html, body { overflow-x: hidden; }
   body { @apply bg-white font-sans text-ink antialiased; font-variant-numeric: tabular-nums; }
   h1, h2, h3 { @apply font-display; }
+  button, [role="button"], a, input, select, textarea { touch-action: manipulation; }
   :focus-visible { outline: 3px solid #0F0F0F; outline-offset: 2px; }
   .on-dark :focus-visible { outline-color: #F4C430; }
   @media (prefers-reduced-motion: reduce) {

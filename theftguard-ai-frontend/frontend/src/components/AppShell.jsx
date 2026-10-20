@@ -92,7 +92,7 @@ function NavItems({ onNavigate, collapsed, onTooltip, onTooltipLeave }) {
             to={n.to}
             onClick={onNavigate}
             className={({ isActive }) =>
-              `flex items-center gap-3 rounded border-l-4 px-3 py-2.5 text-sm font-medium transition-colors ${
+              `flex items-center gap-3 rounded border-l-4 px-3 py-2.5 text-sm font-medium transition-colors min-h-[44px] ${
                 isActive
                   ? 'border-gold bg-white/10 text-white font-semibold'
                   : isChat
@@ -418,7 +418,7 @@ export default function AppShell() {
         <button
           type="button"
           onClick={() => setMenu(true)}
-          className="rounded p-2 text-white hover:bg-white/10 cursor-pointer"
+          className="rounded p-2 text-white hover:bg-white/10 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
           aria-label="Open navigation"
         >
           <Icon name="menu" />
@@ -427,13 +427,13 @@ export default function AppShell() {
       {menu ? (
         <div className="fixed inset-0 z-40 lg:hidden print:hidden" role="dialog" aria-modal="true" aria-label="Mobile navigation">
           <div className="absolute inset-0 bg-ink/60 backdrop-blur-xs" onClick={() => setMenu(false)} aria-hidden="true" />
-          <div className="on-dark absolute inset-y-0 left-0 flex w-72 flex-col bg-ink p-4 shadow-2xl">
+          <div className="on-dark absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col bg-ink p-4 shadow-2xl">
             <div className="mb-6 flex items-center justify-between">
               <Logo tone="onDark" />
               <button
                 type="button"
                 onClick={() => setMenu(false)}
-                className="rounded p-2 text-white hover:bg-white/10 cursor-pointer"
+                className="rounded p-2 text-white hover:bg-white/10 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
                 aria-label="Close navigation"
               >
                 <Icon name="close" />
@@ -480,7 +480,7 @@ export default function AppShell() {
       ) : null}
 
       <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-gold bg-pale px-4 py-2 text-sm print:hidden sm:px-6">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-gold bg-pale px-3 py-2 text-xs sm:text-sm print:hidden sm:px-6">
           <DemoBadge>
             {isChatRoute
               ? t('topBanner.localStorageBadge')
@@ -506,16 +506,16 @@ export default function AppShell() {
             )}
           </span>
         </div>
-        <main id="main" className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:py-8">
+        <main id="main" className="mx-auto w-full max-w-7xl px-3 py-4 sm:px-6 lg:py-8 min-w-0">
           <Outlet />
         </main>
       </div>
 
       {/* Floating Global AI Assistant Trigger */}
-      <div className="fixed bottom-6 right-6 z-40 print:hidden flex items-center gap-2">
+      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 print:hidden flex items-center gap-2">
         <Link
           to="/app/chat"
-          className="hidden sm:flex items-center gap-1.5 rounded-full bg-ink px-3.5 py-2 text-xs font-semibold text-white shadow-lg hover:bg-ink/90 border border-slate-700 transition-all cursor-pointer"
+          className="hidden sm:flex items-center gap-1.5 rounded-full bg-ink px-3.5 py-2 text-xs font-semibold text-white shadow-lg hover:bg-ink/90 border border-slate-700 transition-all cursor-pointer min-h-[44px]"
           title="Open Dedicated Full-Page AI Chat Workspace"
         >
           <Icon name="chat" className="h-3.5 w-3.5 text-gold" />
@@ -524,7 +524,7 @@ export default function AppShell() {
         <button
           type="button"
           onClick={() => setAssistantOpen(true)}
-          className="flex items-center gap-2 rounded-full bg-gold px-4 py-2.5 text-xs font-bold text-ink shadow-lg hover:bg-[#E0B220] hover:shadow-xl transition-all border border-gold focus:outline-hidden focus:ring-2 focus:ring-gold cursor-pointer"
+          className="flex items-center gap-2 rounded-full bg-gold px-3.5 py-2.5 sm:px-4 text-xs font-bold text-ink shadow-lg hover:bg-[#E0B220] hover:shadow-xl transition-all border border-gold focus:outline-hidden focus:ring-2 focus:ring-gold cursor-pointer min-h-[44px]"
           aria-label={t('assistantDrawer.askAssistant')}
         >
           <span className="text-base leading-none">⚡</span>

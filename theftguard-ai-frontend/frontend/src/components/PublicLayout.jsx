@@ -15,14 +15,14 @@ export default function PublicLayout() {
         {t('publicLayout.skipToMain')}
       </a>
       <header className="border-b border-line bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-          <Link to="/"><Logo /></Link>
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-3 py-3 sm:gap-4 sm:px-6">
+          <Link to="/" className="shrink-0"><Logo className="text-sm sm:text-base" /></Link>
           <nav aria-label="Site" className="hidden items-center gap-6 text-sm font-medium md:flex">
             <a href="/#how" className="hover:underline">{t('publicLayout.howItWorks')}</a>
             <a href="/#model" className="hover:underline">{t('publicLayout.theModel')}</a>
             <a href="/#use" className="hover:underline">{t('publicLayout.responsibleUse')}</a>
           </nav>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <LanguageSelector variant="compact" />
             {isAuthenticated ? (
               <Button to="/app/dashboard" variant="primary" size="sm">{t('publicLayout.goToWorkspace')}</Button>

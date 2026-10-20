@@ -148,7 +148,7 @@ export default function Investigations() {
               title={`${current.customerRef} (${current.ticketCode})`}
               subtitle={`${current.origin}: ${current.basis}`}
               actions={
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   {current.isPersisted ? (
                     <Badge tone="ok">Persisted</Badge>
                   ) : (

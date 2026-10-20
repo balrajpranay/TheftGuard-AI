@@ -511,10 +511,10 @@ export default function BillComparison() {
             {/* Hero Metric Cards */}
             <div className="grid grid-cols-2 divide-line rounded border border-line bg-white md:grid-cols-4 md:divide-x">
               {/* Card 1: Total Consumption */}
-              <div className="p-4">
+              <div className="p-3 sm:p-4">
                 <p className="text-xs font-medium text-muted">Billed Consumption</p>
-                <div className="mt-1 flex items-baseline gap-2">
-                  <span className="font-display text-2xl font-bold text-ink">
+                <div className="mt-1 flex flex-wrap items-baseline gap-1.5 sm:gap-2">
+                  <span className="font-display text-xl sm:text-2xl font-bold text-ink">
                     {kwh(comparison.metrics.currUnits)}
                   </span>
                   <Badge tone={comparison.metrics.consumptionDelta > 0 ? 'gold' : 'ok'}>
@@ -528,10 +528,10 @@ export default function BillComparison() {
               </div>
 
               {/* Card 2: Average Daily Rate */}
-              <div className="p-4 border-t border-line md:border-t-0">
+              <div className="p-3 sm:p-4 border-t border-line md:border-t-0">
                 <p className="text-xs font-medium text-muted">Daily Consumption Rate</p>
-                <div className="mt-1 flex items-baseline gap-2">
-                  <span className="font-display text-2xl font-bold text-ink">
+                <div className="mt-1 flex flex-wrap items-baseline gap-1.5 sm:gap-2">
+                  <span className="font-display text-xl sm:text-2xl font-bold text-ink">
                     {comparison.metrics.currDaily !== null ? `${comparison.metrics.currDaily} kWh/d` : '—'}
                   </span>
                   {comparison.metrics.dailyPctChange !== null ? (
@@ -550,10 +550,10 @@ export default function BillComparison() {
               </div>
 
               {/* Card 3: Bill Amount */}
-              <div className="p-4 border-t border-line md:border-t-0">
+              <div className="p-3 sm:p-4 border-t border-line md:border-t-0">
                 <p className="text-xs font-medium text-muted">Total Billed Amount</p>
-                <div className="mt-1 flex items-baseline gap-2">
-                  <span className="font-display text-2xl font-bold text-ink">
+                <div className="mt-1 flex flex-wrap items-baseline gap-1.5 sm:gap-2">
+                  <span className="font-display text-xl sm:text-2xl font-bold text-ink">
                     {inr(comparison.metrics.currAmount)}
                   </span>
                   <Badge tone={comparison.metrics.amountDelta > 0 ? 'gold' : 'ok'}>
@@ -567,10 +567,10 @@ export default function BillComparison() {
               </div>
 
               {/* Card 4: Effective Rate */}
-              <div className="p-4 border-t border-line md:border-t-0">
+              <div className="p-3 sm:p-4 border-t border-line md:border-t-0">
                 <p className="text-xs font-medium text-muted">Effective Cost Rate</p>
-                <div className="mt-1 flex items-baseline gap-2">
-                  <span className="font-display text-2xl font-bold text-ink">
+                <div className="mt-1 flex flex-wrap items-baseline gap-1.5 sm:gap-2">
+                  <span className="font-display text-xl sm:text-2xl font-bold text-ink">
                     {comparison.metrics.currEffectiveRate !== null ? `₹${comparison.metrics.currEffectiveRate}` : '—'}
                   </span>
                   <span className="text-xs text-muted">/ kWh</span>
@@ -803,7 +803,7 @@ function BillSlotCard({ roleTitle, slotKey, slotState, inputRef, onFileSelect, o
       <input
         ref={inputRef}
         type="file"
-        accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf"
+        accept=".jpg,.jpeg,.png,.pdf,image/*,application/pdf"
         className="sr-only"
         id={`file-input-${slotKey}`}
         aria-label={`Upload file for ${roleTitle}`}

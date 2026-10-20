@@ -85,7 +85,7 @@ export default function ChatComposer({
               <button
                 type="button"
                 onClick={() => setToolsOpen((prev) => !prev)}
-                className={`flex h-9 w-9 items-center justify-center rounded-xl border transition-all cursor-pointer ${
+                className={`flex h-10 w-10 sm:h-9 sm:w-9 items-center justify-center rounded-xl border transition-all cursor-pointer ${
                   toolsOpen
                     ? 'border-gold bg-gold text-ink shadow-xs'
                     : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-ink hover:border-slate-300'
@@ -129,7 +129,7 @@ export default function ChatComposer({
                 <button
                   type="button"
                   onClick={onStopGeneration}
-                  className="flex h-9 items-center gap-1.5 rounded-xl border border-red-300 bg-red-50 px-3 text-xs font-semibold text-red-700 hover:bg-red-100 active:scale-95 transition-all cursor-pointer shadow-2xs shrink-0"
+                  className="flex h-10 sm:h-9 items-center gap-1.5 rounded-xl border border-red-300 bg-red-50 px-3 text-xs font-semibold text-red-700 hover:bg-red-100 active:scale-95 transition-all cursor-pointer shadow-2xs shrink-0"
                   title="Stop generating response"
                   aria-label="Stop generating response"
                 >
@@ -141,7 +141,7 @@ export default function ChatComposer({
                   type="button"
                   onClick={handleSend}
                   disabled={!text.trim() || disabled}
-                  className="flex h-9 w-9 items-center justify-center rounded-xl bg-gold text-ink hover:bg-[#E0B220] active:scale-95 disabled:opacity-40 disabled:pointer-events-none transition-all cursor-pointer shadow-xs shrink-0"
+                  className="flex h-10 w-10 sm:h-9 sm:w-9 items-center justify-center rounded-xl bg-gold text-ink hover:bg-[#E0B220] active:scale-95 disabled:opacity-40 disabled:pointer-events-none transition-all cursor-pointer shadow-xs shrink-0"
                   title="Send Message (Enter)"
                   aria-label="Send Message"
                 >
@@ -153,13 +153,16 @@ export default function ChatComposer({
 
           {/* Bottom helper row */}
           <div className="mt-1.5 flex items-center justify-between text-[11px] text-slate-400 px-1">
-            <span>
+            <span className="hidden sm:inline">
               Press <kbd className="rounded border border-slate-200 bg-slate-100 px-1 py-0.2 font-mono text-[10px]">Enter</kbd> to send, <kbd className="rounded border border-slate-200 bg-slate-100 px-1 py-0.2 font-mono text-[10px]">Shift+Enter</kbd> for newline
+            </span>
+            <span className="sm:hidden text-[10px] text-slate-400">
+              Tap Send to submit
             </span>
             <button
               type="button"
               onClick={() => setToolsOpen(true)}
-              className="text-slate-500 hover:text-ink hover:underline cursor-pointer flex items-center gap-1"
+              className="text-slate-500 hover:text-ink hover:underline cursor-pointer flex items-center gap-1 min-h-[32px]"
             >
               <Icon name="sparkles" className="h-3 w-3 text-gold" />
               <span>Grounded Tools</span>

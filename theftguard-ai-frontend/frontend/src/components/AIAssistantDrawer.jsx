@@ -250,26 +250,26 @@ export default function AIAssistantDrawer({
       <div className="absolute inset-0 bg-ink/50 backdrop-blur-xs transition-opacity" onClick={onClose} aria-hidden="true" />
 
       {/* Slide-over panel */}
-      <div className="fixed inset-y-0 right-0 flex max-w-full pl-6 sm:pl-10">
+      <div className="fixed inset-y-0 right-0 flex max-w-full pl-0 sm:pl-10">
         <div className="w-screen max-w-xl bg-white shadow-2xl flex flex-col border-l border-line">
           {/* Header */}
-          <div className="border-b border-line bg-pale px-5 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gold text-ink font-bold shadow-xs">
+          <div className="border-b border-line bg-pale px-4 sm:px-5 py-4">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gold text-ink font-bold shadow-xs">
                   ⚡
                 </span>
-                <div>
-                  <h2 id="assistant-title" className="text-base font-bold text-ink flex items-center gap-2">
-                    AI Bill Assistant
-                    <Badge tone="info" className="text-[10px] uppercase font-semibold">
+                <div className="min-w-0">
+                  <h2 id="assistant-title" className="text-base font-bold text-ink flex items-center gap-2 truncate">
+                    <span>AI Bill Assistant</span>
+                    <Badge tone="info" className="text-[10px] uppercase font-semibold shrink-0">
                       {providerMode.includes('gemini') ? 'Gemini AI' : 'Local Rule Engine'}
                     </Badge>
                   </h2>
-                  <p className="text-xs text-muted">Friendly household electricity usage insights & guidance</p>
+                  <p className="text-xs text-muted truncate">Friendly household electricity usage insights & guidance</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 <Link
                   to="/app/chat"
                   onClick={onClose}
@@ -282,7 +282,7 @@ export default function AIAssistantDrawer({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="rounded-lg p-2 text-muted hover:bg-mist hover:text-ink transition-colors"
+                  className="rounded-lg p-2 text-muted hover:bg-mist hover:text-ink transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                   aria-label="Close assistant"
                 >
                   <Icon name="close" className="h-5 w-5" />
@@ -291,11 +291,11 @@ export default function AIAssistantDrawer({
             </div>
 
             {/* Tab navigation */}
-            <div className="mt-4 flex border-b border-line/60 gap-4 text-xs font-semibold">
+            <div className="mt-4 flex border-b border-line/60 gap-3 sm:gap-4 text-xs font-semibold overflow-x-auto no-scrollbar scroll-smooth">
               <button
                 type="button"
                 onClick={() => setActiveTab('chat')}
-                className={`pb-2 transition-colors border-b-2 flex items-center gap-1.5 ${
+                className={`pb-2 transition-colors border-b-2 flex shrink-0 whitespace-nowrap items-center gap-1.5 min-h-[36px] ${
                   activeTab === 'chat'
                     ? 'border-gold text-ink'
                     : 'border-transparent text-muted hover:text-ink'
@@ -306,7 +306,7 @@ export default function AIAssistantDrawer({
               <button
                 type="button"
                 onClick={() => setActiveTab('questionnaire')}
-                className={`pb-2 transition-colors border-b-2 flex items-center gap-1.5 ${
+                className={`pb-2 transition-colors border-b-2 flex shrink-0 whitespace-nowrap items-center gap-1.5 min-h-[36px] ${
                   activeTab === 'questionnaire'
                     ? 'border-gold text-ink'
                     : 'border-transparent text-muted hover:text-ink'
@@ -320,7 +320,7 @@ export default function AIAssistantDrawer({
               <button
                 type="button"
                 onClick={() => setActiveTab('breakdown')}
-                className={`pb-2 transition-colors border-b-2 flex items-center gap-1.5 ${
+                className={`pb-2 transition-colors border-b-2 flex shrink-0 whitespace-nowrap items-center gap-1.5 min-h-[36px] ${
                   activeTab === 'breakdown'
                     ? 'border-gold text-ink'
                     : 'border-transparent text-muted hover:text-ink'

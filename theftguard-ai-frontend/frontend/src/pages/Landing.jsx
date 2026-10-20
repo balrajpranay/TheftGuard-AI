@@ -71,15 +71,15 @@ export default function Landing() {
         <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[1.1fr_1fr] lg:items-center lg:py-20">
           <div>
             <p className="text-sm font-medium text-gold-deep">{t('landing.tagline')}</p>
-            <h1 className="mt-3 text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
+            <h1 className="mt-3 text-3xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl break-words">
               Analyze consumption.<br />
               Detect suspicious patterns.<br />
               Support investigation.
             </h1>
-            <p className="mt-5 max-w-xl text-lg text-ink/80">
+            <p className="mt-5 max-w-xl text-base sm:text-lg text-ink/80">
               {t('landing.description')}
             </p>
-            <div className="mt-7 flex flex-wrap gap-3">
+            <div className="mt-7 flex flex-wrap gap-2.5 sm:gap-3">
               <Button to="/app/dashboard" variant="primary" icon="arrowRight">{t('landing.openDemo')}</Button>
               <Button to="/app/model" variant="secondary">{t('landing.readVerified')}</Button>
             </div>

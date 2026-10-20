@@ -41,13 +41,13 @@ export default function ChatPluginSelector({
       </div>
 
       {/* Horizontally scrollable chip row */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-0.5 no-scrollbar scroll-smooth">
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 pt-0.5 no-scrollbar scroll-smooth">
         {/* General Assistant Chip */}
         <button
           type="button"
           disabled={disabled}
           onClick={onSelectGeneral}
-          className={`group flex shrink-0 items-center gap-1.5 rounded-xl border px-2.5 py-1 text-xs transition-all cursor-pointer select-none active:scale-95 ${
+          className={`group flex shrink-0 items-center gap-1.5 rounded-xl border px-2.5 py-1 text-xs transition-all cursor-pointer select-none active:scale-95 min-h-[36px] ${
             isGeneralActive
               ? 'border-amber-400 bg-amber-50 font-semibold text-amber-900 shadow-2xs ring-1 ring-amber-300'
               : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
@@ -85,7 +85,7 @@ export default function ChatPluginSelector({
                 type="button"
                 disabled={disabled}
                 onClick={() => onTogglePlugin(plugin.id)}
-                className="flex items-center gap-1.5 px-2.5 py-1 text-xs cursor-pointer focus:outline-hidden"
+                className="flex items-center gap-1.5 px-2.5 py-1 text-xs cursor-pointer focus:outline-hidden min-h-[36px]"
                 title={`${plugin.name}: ${plugin.description} (Click to toggle)`}
                 aria-pressed={isSelected}
               >
@@ -112,7 +112,7 @@ export default function ChatPluginSelector({
                     e.stopPropagation()
                     onExecutePlugin(plugin.id)
                   }}
-                  className={`flex items-center justify-center border-l px-1.5 py-1 text-[10px] font-medium transition-colors cursor-pointer focus:outline-hidden ${
+                  className={`flex items-center justify-center border-l px-2 py-1 text-[10px] font-medium transition-colors cursor-pointer focus:outline-hidden min-h-[36px] min-w-[32px] ${
                     isSelected
                       ? 'border-gold/30 text-amber-900 hover:bg-gold/30 hover:text-black'
                       : 'border-slate-200 text-slate-400 hover:bg-slate-100 hover:text-slate-700'

@@ -163,25 +163,27 @@ export default function Reports() {
               {flagged.length === 0 ? (
                 <p className="mt-2 text-sm text-muted">No customers are in the Review Recommended band for the loaded results.</p>
               ) : (
-                <table className="mt-2 w-full text-left text-sm">
-                  <caption className="sr-only">Customers in the review band</caption>
-                  <thead className="border-b border-ink">
-                    <tr>
-                      <th scope="col" className="py-1.5 font-medium">Customer</th>
-                      <th scope="col" className="py-1.5 font-medium">Model Score</th>
-                      <th scope="col" className="py-1.5 font-medium">Category</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {flagged.slice(0, 15).map((f, idx) => (
-                      <tr key={`${f.id}-${idx}`} className="border-b border-line">
-                        <th scope="row" className="py-1.5 font-medium">{f.id}</th>
-                        <td className="py-1.5">{fmtScore(f.score)}</td>
-                        <td className="py-1.5">{CATEGORIES[f.category]?.label || f.category}</td>
+                <div className="overflow-x-auto">
+                  <table className="mt-2 w-full text-left text-sm min-w-[280px]">
+                    <caption className="sr-only">Customers in the review band</caption>
+                    <thead className="border-b border-ink">
+                      <tr>
+                        <th scope="col" className="py-1.5 font-medium">Customer</th>
+                        <th scope="col" className="py-1.5 font-medium">Model Score</th>
+                        <th scope="col" className="py-1.5 font-medium">Category</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {flagged.slice(0, 15).map((f, idx) => (
+                        <tr key={`${f.id}-${idx}`} className="border-b border-line">
+                          <th scope="row" className="py-1.5 font-medium">{f.id}</th>
+                          <td className="py-1.5">{fmtScore(f.score)}</td>
+                          <td className="py-1.5">{CATEGORIES[f.category]?.label || f.category}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
               {flagged.length > 15 ? (
                 <p className="mt-1 text-xs text-muted">Showing the 15 highest of {flagged.length}. The CSV download lists all of them.</p>
@@ -203,25 +205,27 @@ export default function Reports() {
                       {' '}{drops.length} of {items.length} customers show a decrease of {comparison.dropThreshold}% or more in average daily kWh.
                     </p>
                     {drops.length > 0 ? (
-                      <table className="mt-2 w-full text-left text-sm">
-                        <caption className="sr-only">Customers with a large decrease</caption>
-                        <thead className="border-b border-ink">
-                          <tr>
-                            <th scope="col" className="py-1.5 font-medium">Customer</th>
-                            <th scope="col" className="py-1.5 text-right font-medium">Change</th>
-                            <th scope="col" className="py-1.5 text-right font-medium">Estimate (₹)</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {drops.slice(0, 10).map((d) => (
-                            <tr key={d.ref} className="border-b border-line">
-                              <th scope="row" className="py-1.5 font-medium">{d.ref}</th>
-                              <td className="py-1.5 text-right">{pct(d.change, 1)}</td>
-                              <td className="py-1.5 text-right">{inr(estimatedImpact(d, tariff))}</td>
+                      <div className="overflow-x-auto">
+                        <table className="mt-2 w-full text-left text-sm min-w-[280px]">
+                          <caption className="sr-only">Customers with a large decrease</caption>
+                          <thead className="border-b border-ink">
+                            <tr>
+                              <th scope="col" className="py-1.5 font-medium">Customer</th>
+                              <th scope="col" className="py-1.5 text-right font-medium">Change</th>
+                              <th scope="col" className="py-1.5 text-right font-medium">Estimate (₹)</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody>
+                            {drops.slice(0, 10).map((d) => (
+                              <tr key={d.ref} className="border-b border-line">
+                                <th scope="row" className="py-1.5 font-medium">{d.ref}</th>
+                                <td className="py-1.5 text-right">{pct(d.change, 1)}</td>
+                                <td className="py-1.5 text-right">{inr(estimatedImpact(d, tariff))}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     ) : null}
                     <p className="mt-2 text-sm">
                       <strong>Estimated difference: {inr(impact)}.</strong> This is an estimate at ₹{num(tariff, 2)} per kWh. It assumes each customer's
