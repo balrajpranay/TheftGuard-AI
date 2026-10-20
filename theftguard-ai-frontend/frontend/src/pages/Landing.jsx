@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
-import { Link } from 'react-router-dom'
-import { Button, CategoryBadge, DemoBadge, ScoreScale } from '../components/ui'
+import { Link, Navigate, useLocation } from 'react-router-dom'
+import { Button, CategoryBadge, DemoBadge, ScoreScale, Spinner } from '../components/ui'
+import { useAuth } from '../context/AuthContext.js'
 import { buildDemoCustomers } from '../data/demoCustomers'
 import { MODEL_FACTS } from '../data/modelFacts'
 import { classify, DEFAULT_THRESHOLDS } from '../lib/risk'
@@ -22,6 +23,42 @@ const STEPS = [
 ]
 
 export default function Landing() {
+  const { isAuthenticated, loading } = useAuth()
+  const location = useLocation()
+
+  // 1. If genuinely authenticated, automatically navigate to workspace dashboard
+  if (isAuthenticated) {
+    return <Navigate to="/app/dashboard" replace />
+  }
+
+  // 2. Check for OAuth callback or error parameters in the URL
+  const hash = location.hash || (typeof window !== 'undefined' ? window.location.hash || '' : '')
+  const search = location.search || (typeof window !== 'undefined' ? window.location.search || '' : '')
+
+  const hasAuthError =
+    hash.includes('error=') ||
+    hash.includes('error_description=') ||
+    search.includes('error=') ||
+    search.includes('error_description=')
+
+  if (hasAuthError) {
+    return <Navigate to={`/signin${search}${hash}`} replace />
+  }
+
+  const hasOAuthParams = hash.includes('access_token=') || search.includes('code=')
+
+  // 3. While restoring session from incoming OAuth callback, show verifying spinner
+  // to avoid flashing the public landing page before Supabase finishes restoring the session
+  if (loading && hasOAuthParams) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-mist px-4">
+        <div className="rounded border border-line bg-white p-6 shadow-xs text-center">
+          <Spinner label="Completing Google sign-in..." />
+        </div>
+      </div>
+    )
+  }
+
   const top = useMemo(() => [...buildDemoCustomers()].sort((a, b) => b.score - a.score).slice(0, 5), [])
   const m = Object.fromEntries(MODEL_FACTS.metrics.map((x) => [x.key, x.value]))
   const flagged = MODEL_FACTS.confusion.TP + MODEL_FACTS.confusion.FP

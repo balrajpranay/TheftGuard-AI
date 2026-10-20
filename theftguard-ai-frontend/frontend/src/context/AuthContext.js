@@ -36,12 +36,29 @@ export function AuthProvider({ children }) {
   // Initialize session and subscribe to Supabase Auth state changes
   useEffect(() => {
     let mounted = true
+    let oauthSafetyTimer = null
+
+    const hasOAuthParams =
+      typeof window !== 'undefined' &&
+      (window.location.search?.includes('code=') || window.location.hash?.includes('access_token='))
+
+    // If OAuth callback parameters are present, prevent premature loading state drops
+    // until onAuthStateChange delivers the verified session or safety timeout expires.
+    if (hasOAuthParams) {
+      oauthSafetyTimer = setTimeout(() => {
+        if (mounted) {
+          setLoading(false)
+        }
+      }, 5000)
+    }
 
     async function initAuth() {
+      let retrievedSession = null
       try {
         const { data, error } = await supabase.auth.getSession()
         if (mounted) {
           if (!error && data?.session) {
+            retrievedSession = data.session
             setSession(data.session)
             setUser(data.session.user ?? null)
             // If genuinely authenticated, clear demo mode
@@ -62,7 +79,11 @@ export function AuthProvider({ children }) {
         }
       } finally {
         if (mounted) {
-          setLoading(false)
+          // If OAuth params are in URL and session wasn't already in cache,
+          // keep loading=true so detectSessionInUrl can finish code exchange.
+          if (!hasOAuthParams || retrievedSession) {
+            setLoading(false)
+          }
         }
       }
     }
@@ -73,6 +94,11 @@ export function AuthProvider({ children }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, newSession) => {
       if (!mounted) return
+
+      if (oauthSafetyTimer) {
+        clearTimeout(oauthSafetyTimer)
+        oauthSafetyTimer = null
+      }
 
       if (event === 'SIGNED_OUT' || !newSession) {
         setSession(null)
@@ -90,6 +116,9 @@ export function AuthProvider({ children }) {
 
     return () => {
       mounted = false
+      if (oauthSafetyTimer) {
+        clearTimeout(oauthSafetyTimer)
+      }
       if (subscription && typeof subscription.unsubscribe === 'function') {
         subscription.unsubscribe()
       }

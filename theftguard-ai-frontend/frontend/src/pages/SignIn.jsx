@@ -19,7 +19,7 @@ import { supabase } from '../lib/supabaseClient.js'
 export default function SignIn() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { signIn, signUp, isAuthenticated, isSupabaseConfigured, enterDemoMode } = useAuth()
+  const { signIn, signUp, isAuthenticated, isSupabaseConfigured, enterDemoMode, loading } = useAuth()
 
   const [mode, setMode] = useState('signin')
   const [fullName, setFullName] = useState('')
@@ -48,6 +48,16 @@ export default function SignIn() {
       }
     } catch {}
   }, [])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-mist px-4">
+        <div className="rounded border border-line bg-white p-6 shadow-xs text-center">
+          <Spinner label="Verifying authentication..." />
+        </div>
+      </div>
+    )
+  }
 
   // If already authenticated, redirect to workspace
   if (isAuthenticated) {

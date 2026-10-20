@@ -155,4 +155,45 @@ test.describe('TheftGuard AI — Frontend Authentication & Route Protection', ()
     await expect(googleBtn).toBeEnabled()
     await expect(page.getByText('Or create with email')).toBeVisible()
   })
+
+  test('13. Unauthenticated visitor visiting / remains on the public landing page', async ({ page }) => {
+    await page.goto('/')
+
+    expect(page.url()).not.toContain('/app')
+    await expect(page.getByRole('heading', { name: /Analyze consumption/i })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Open demo workspace' }).first()).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Sign in', exact: true })).toBeVisible()
+  })
+
+  test('14. Authenticated user visiting / automatically navigates to /app/dashboard', async ({ page }) => {
+    // Inject a valid mock Supabase session into localStorage
+    await page.goto('/')
+    await page.evaluate(() => {
+      const mockSession = {
+        access_token: 'fake-jwt-token-header.payload.signature',
+        refresh_token: 'fake-refresh-token',
+        expires_at: Math.floor(Date.now() / 1000) + 3600,
+        token_type: 'bearer',
+        user: {
+          id: '00000000-1111-2222-3333-444444444444',
+          email: 'operator@utility.org',
+          aud: 'authenticated',
+          role: 'authenticated',
+        },
+      }
+      localStorage.setItem('sb-bwsatuxmjwxousqaofhi-auth-token', JSON.stringify(mockSession))
+    })
+
+    // Now navigate to public landing root
+    await page.goto('/')
+    await expect(page).toHaveURL(/.*\/app\/dashboard/)
+    await expect(page.locator('[data-testid="desktop-sidebar"]')).toBeVisible()
+  })
+
+  test('15. Landing page catches OAuth error parameters and redirects to /signin with error notification', async ({ page }) => {
+    await page.goto('/#error=access_denied&error_description=Google+sign-in+cancelled+by+user')
+    await expect(page).toHaveURL(/.*\/signin.*/)
+
+    await expect(page.getByText('Google sign-in cancelled by user')).toBeVisible()
+  })
 })

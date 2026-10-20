@@ -443,5 +443,29 @@ describe('Supabase Client & Auth Token Integration', () => {
   test('useAuth provides functional signInWithOAuth fallback method', async () => {
     const auth = useAuth()
     assert.strictEqual(typeof auth.signInWithOAuth, 'function')
+    assert.strictEqual(typeof auth.loading, 'boolean')
+    assert.strictEqual(auth.loading, false)
+    assert.strictEqual(auth.isAuthenticated, false)
+    assert.strictEqual(auth.isDemoMode, false)
+  })
+
+  test('signInWithOAuth operates cleanly when redirectTo option is omitted', async () => {
+    let capturedArgs = null
+    setSupabaseClientForTesting({
+      auth: {
+        signInWithOAuth: async (args) => {
+          capturedArgs = args
+          return { data: { provider: 'google', url: 'https://accounts.google.com/o/oauth2/v2/auth' }, error: null }
+        },
+      },
+    })
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+    })
+
+    assert.strictEqual(error, null)
+    assert.strictEqual(capturedArgs?.provider, 'google')
+    assert.ok(data?.url)
   })
 })

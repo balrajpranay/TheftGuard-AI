@@ -1,8 +1,11 @@
 import { Link, Outlet } from 'react-router-dom'
 import Logo from './Logo'
 import { Button } from './ui'
+import { useAuth } from '../context/AuthContext.js'
 
 export default function PublicLayout() {
+  const { isAuthenticated } = useAuth()
+
   return (
     <div className="flex min-h-screen flex-col">
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded focus:bg-gold focus:px-3 focus:py-2 focus:text-ink">
@@ -17,8 +20,14 @@ export default function PublicLayout() {
             <a href="/#use" className="hover:underline">Responsible use</a>
           </nav>
           <div className="flex items-center gap-2">
-            <Button to="/signin" variant="ghost" size="sm" className="hidden sm:inline-flex">Sign in</Button>
-            <Button to="/app/dashboard" variant="primary" size="sm">Open demo workspace</Button>
+            {isAuthenticated ? (
+              <Button to="/app/dashboard" variant="primary" size="sm">Go to workspace</Button>
+            ) : (
+              <>
+                <Button to="/signin" variant="ghost" size="sm" className="hidden sm:inline-flex">Sign in</Button>
+                <Button to="/app/dashboard" variant="primary" size="sm">Open demo workspace</Button>
+              </>
+            )}
           </div>
         </div>
       </header>
