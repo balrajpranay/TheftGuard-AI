@@ -21,6 +21,11 @@ import {
 } from './householdQuestionnaire.js'
 import { cleanNumber } from './billComparison.js'
 
+import {
+  ASSISTANT_PLUGINS,
+  executePluginAction,
+} from './assistantPlugins.js'
+
 export const CHAT_TOOLS = [
   {
     id: 'compare_bills',
@@ -68,6 +73,12 @@ export async function executeChatTool({
   billContext = null,
   questionnaireAnswers = null,
   billSlots = null,
+  customers = [],
+  uploaded = null,
+  investigations = [],
+  tariff = 7,
+  isAuthenticated = false,
+  isDemoMode = false,
 }) {
   switch (toolId) {
     case 'compare_bills':
@@ -84,6 +95,29 @@ export async function executeChatTool({
 
     case 'review_missing_ocr':
       return executeReviewMissingOcr(billContext, billSlots)
+
+    // Selectable Assistant Plugins
+    case 'bill_comparison':
+    case 'bill_upload_ocr':
+    case 'theft_screening':
+    case 'usage_analyst':
+    case 'reports_history':
+    case 'bill_calculator':
+    case 'electricity_help':
+    case 'general_assistant':
+      return executePluginAction({
+        pluginId: toolId,
+        params,
+        billContext,
+        questionnaireAnswers,
+        billSlots,
+        customers,
+        uploaded,
+        investigations,
+        tariff,
+        isAuthenticated,
+        isDemoMode,
+      })
 
     default:
       return {

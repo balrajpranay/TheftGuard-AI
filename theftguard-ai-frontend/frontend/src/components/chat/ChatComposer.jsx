@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
 import Icon from '../Icon'
 import ChatToolsMenu from './ChatToolsMenu'
+import ChatPluginSelector from './ChatPluginSelector'
+import { getPluginById } from '../../lib/assistantPlugins'
 
 const MAX_MESSAGE_LENGTH = 1500
 
@@ -10,11 +12,21 @@ export default function ChatComposer({
   onStopGeneration = null,
   loading = false,
   disabled = false,
-  placeholder = 'Ask a question about your electricity bill, appliance load, or tariff slabs...',
+  placeholder = null,
+  selectedPlugins = ['general_assistant'],
+  onTogglePlugin = () => {},
+  onSelectGeneral = () => {},
 }) {
   const [text, setText] = useState('')
   const [toolsOpen, setToolsOpen] = useState(false)
   const textareaRef = useRef(null)
+
+  const activePluginMeta = selectedPlugins.length === 1 ? getPluginById(selectedPlugins[0]) : null
+  const effectivePlaceholder =
+    placeholder ||
+    (activePluginMeta && !activePluginMeta.isDefault
+      ? activePluginMeta.placeholder
+      : 'Ask a question about your electricity bill, appliance load, or tariff slabs...')
 
   // Auto-resize textarea height
   useEffect(() => {
@@ -49,6 +61,15 @@ export default function ChatComposer({
   return (
     <div className="relative border-t border-slate-200/80 bg-white/95 backdrop-blur-xs p-3 sm:p-4 transition-all">
       <div className="mx-auto max-w-3xl">
+        {/* Assistant Plugin Selector */}
+        <ChatPluginSelector
+          selectedPlugins={selectedPlugins}
+          onTogglePlugin={onTogglePlugin}
+          onSelectGeneral={onSelectGeneral}
+          onExecutePlugin={onExecuteTool}
+          disabled={loading || disabled}
+        />
+
         <div className="relative">
           <ChatToolsMenu
             isOpen={toolsOpen}
@@ -69,7 +90,7 @@ export default function ChatComposer({
                     ? 'border-gold bg-gold text-ink shadow-xs'
                     : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-ink hover:border-slate-300'
                 }`}
-                title="Application Tools (Compare Bills, Household Profile, Appliance Load...)"
+                title="Application Tools & Plugins"
                 aria-label="Open Tools Menu"
                 aria-haspopup="menu"
                 aria-expanded={toolsOpen}
@@ -86,7 +107,7 @@ export default function ChatComposer({
                 value={text}
                 onChange={(e) => setText(e.target.value.slice(0, MAX_MESSAGE_LENGTH))}
                 onKeyDown={handleKeyDown}
-                placeholder={placeholder}
+                placeholder={effectivePlaceholder}
                 disabled={loading || disabled}
                 className="w-full resize-none border-0 bg-transparent py-2 px-1 text-sm text-ink placeholder-slate-400 focus:outline-hidden focus:ring-0 disabled:opacity-50 leading-relaxed max-h-44"
               />

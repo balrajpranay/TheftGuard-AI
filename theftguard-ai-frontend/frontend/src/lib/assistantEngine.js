@@ -459,7 +459,8 @@ export function generateClientRuleResponse(
   message = '',
   billContext = null,
   questionnaireAnswers = null,
-  history = []
+  history = [],
+  activePlugins = []
 ) {
   const lowerMsg = String(message || '').toLowerCase().trim()
   const words = extractWords(lowerMsg)
@@ -482,6 +483,108 @@ export function generateClientRuleResponse(
     'Educational Guidance: Estimates are based on standard BEE 3-star appliance ratings.',
     'Neutral Finding: Normal household fluctuations, weather, visitors, or tariff slab crossing does not establish electricity theft or meter tampering.',
   ]
+
+  // ---------------------------------------------------------------------------
+  // PLUGIN-GUIDED INTENTS: If specific domain plugins are active
+  // ---------------------------------------------------------------------------
+  const isScreeningPlugin = activePlugins.includes('theft_screening')
+  const isCalculatorPlugin = activePlugins.includes('bill_calculator')
+  const isHelpPlugin = activePlugins.includes('electricity_help')
+  const isReportsPlugin = activePlugins.includes('reports_history')
+
+  if (isCalculatorPlugin && (words.has('calculate') || words.has('tariff') || words.has('slab') || words.has('cost') || words.has('rate') || lowerMsg.includes('how much'))) {
+    return {
+      reply:
+        `### Telescopic Tariff Slab Calculation Guidance\n\n` +
+        `Under standard domestic telescopic tariff structures, electricity charges are tiered:\n\n` +
+        `• **Slab 1 (0–100 units)**: ₹3.40 / kWh + ₹40 fixed monthly charge\n` +
+        `• **Slab 2 (101–200 units)**: ₹4.80 / kWh + ₹70 fixed monthly charge\n` +
+        `• **Slab 3 (201+ units)**: ₹7.50 / kWh + ₹120 fixed monthly charge\n` +
+        `• **Taxes & Surcharges**: 6% Electricity Duty + ₹0.30/kWh Fuel Surcharge (FSA)\n\n` +
+        (billContext && billContext.curr_units
+          ? `For your active current bill of **${billContext.curr_units} kWh**, the effective estimated tariff is **₹${billContext.curr_effective_rate || (billContext.curr_amount / billContext.curr_units).toFixed(2)}/kWh**.\n\n`
+          : '') +
+        `*The Cliff Effect*: Crossing from 195 units to 205 units not only charges higher per-unit rates on the top tier, but also increases your fixed demand charge, resulting in a disproportionate amount jump.\n\n` +
+        `*(Note: Calculation uses an illustrative baseline domestic tariff model for educational estimation. Official tariffs are governed by Discom regulatory orders.)*`,
+      provider: 'local_rule_engine',
+      structured_analysis: analysis,
+      suggestions: [
+        'Compare Bills',
+        'How much electricity does an AC consume in 8 hours?',
+        'Tips to reduce next month’s bill',
+      ],
+      disclaimers,
+    }
+  }
+
+  if (isHelpPlugin && (words.has('meter') || words.has('test') || words.has('check') || words.has('creep') || words.has('reading') || words.has('lcd'))) {
+    return {
+      reply:
+        `### Meter Verification & Switch-Off Creep Test Protocol\n\n` +
+        `To verify whether your electric meter is functioning accurately or registering phantom units:\n\n` +
+        `1. **The Switch-Off Test**:\n` +
+        `   • Switch OFF your main distribution box MCB inside your home.\n` +
+        `   • Observe the \`Imp/kWh\` red/amber LED on your meter dial.\n` +
+        `   • **Expected**: The LED should stop blinking completely. If it pulses while your main switch is OFF, internal wiring leakage or a meter shunt issue exists.\n\n` +
+        `2. **Reading the Digital LCD**:\n` +
+        `   • Screen 1: Date & Time\n` +
+        `   • Screen 2: Cumulative Active Energy (**kWh**) — this must match or exceed your spot bill\n` +
+        `   • Screen 3: Maximum Demand (**MD / kW**)\n\n` +
+        `If the "Present Reading" on your bill is higher than what Screen 2 displays today, an over-billing punch error occurred. You can submit a revision request to your utility office.`,
+      provider: 'local_rule_engine',
+      structured_analysis: analysis,
+      suggestions: [
+        'How to report a spot-billing meter punch error?',
+        'How much power does a water pump consume?',
+        'What should I do next?',
+      ],
+      disclaimers,
+    }
+  }
+
+  if (isReportsPlugin && (words.has('report') || words.has('tickets') || words.has('investigation') || words.has('checklist') || words.has('audit'))) {
+    return {
+      reply:
+        `### Field Investigation & 5-Point Physical Audit Protocol\n\n` +
+        `TheftGuard AI investigation tickets (\`INV-YYYYMMDD-XXXX\`) track the formal audit workflow for utility inspection crews:\n\n` +
+        `• **5-Point Field Verification Protocol**:\n` +
+        `  1. **Identity**: Confirm customer name, consumer number, and physical meter serial.\n` +
+        `  2. **Dial Match**: Compare spot-bill reading against physical LCD cumulative kWh.\n` +
+        `  3. **Seal Integrity**: Inspect terminal cover, lead-wire seals, and holographic tamper stickers.\n` +
+        `  4. **Load Audit**: Verify sanctioned load (kW) against installed appliances (ACs, pumps).\n` +
+        `  5. **Documentation**: Attach geo-tagged photographs and field inspection notes.\n\n` +
+        `You can review and update tickets in **[Field Investigations](/app/investigations)** and generate summary reports in **[Reports](/app/reports)**.`,
+      provider: 'local_rule_engine',
+      structured_analysis: analysis,
+      suggestions: [
+        'Open Field Investigations',
+        'Open Reports',
+        'How does TheftGuard classify abnormal consumption?',
+      ],
+      disclaimers,
+    }
+  }
+
+  if (isScreeningPlugin && (words.has('score') || words.has('screening') || words.has('batch') || words.has('anomalies') || words.has('anomaly') || lowerMsg.includes('results'))) {
+    return {
+      reply:
+        `### Electricity Theft Screening & Model Score Triage\n\n` +
+        `• **Model Screening Pipeline**: TheftGuard AI evaluates accounts using a 250-tree Random Forest classifier across 13 temporal and statistical consumption features.\n\n` +
+        `• **Risk Tiers**:\n` +
+        `  - **Review Band (Score ≥ 0.50)**: Prioritized for on-site physical inspection.\n` +
+        `  - **Elevated Band (0.30 ≤ Score < 0.50)**: Secondary monitoring for consecutive monthly drops.\n` +
+        `  - **Normal Band (Score < 0.30)**: Standard consumption patterns within baseline variance.\n\n` +
+        `• **Responsible AI Disclaimer**: Model scores are **screening triage indicators**, NOT legal proof of electricity theft or meter tampering. Benign causes (extended vacation, solar export, seasonal business shutdown, or meter replacement) must always be investigated before taking action.`,
+      provider: 'local_rule_engine',
+      structured_analysis: analysis,
+      suggestions: [
+        'Open Utility Screening',
+        'Open Field Investigations',
+        'What are common benign reasons for a consumption drop?',
+      ],
+      disclaimers,
+    }
+  }
 
   // ---------------------------------------------------------------------------
   // INTENT 1: Theft, meter tampering, or fraud concerns (Safety & Neutrality first)
@@ -1488,9 +1591,10 @@ export async function chatWithAssistant({
   history = [],
   forceOffline = false,
   signal = null,
+  activePlugins = [],
 }) {
   if (forceOffline) {
-    return generateClientRuleResponse(message, billContext, questionnaireAnswers, history)
+    return generateClientRuleResponse(message, billContext, questionnaireAnswers, history, activePlugins)
   }
 
   try {
@@ -1500,6 +1604,7 @@ export async function chatWithAssistant({
         bill_context: billContext,
         questionnaire_answers: questionnaireAnswers,
         history,
+        active_plugins: activePlugins,
       },
       { signal }
     )
@@ -1510,7 +1615,7 @@ export async function chatWithAssistant({
     }
     // Graceful offline fallback
     console.info('Backend assistant unavailable; falling back to local client rule engine:', err.message)
-    const local = generateClientRuleResponse(message, billContext, questionnaireAnswers, history)
+    const local = generateClientRuleResponse(message, billContext, questionnaireAnswers, history, activePlugins)
     return {
       ...local,
       provider: 'client_rule_engine (offline fallback)',

@@ -8,6 +8,9 @@
 [![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-3.4-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14%2B-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 
+> **Live Website:** [https://theft-guard-ai-z9tb.vercel.app](https://theft-guard-ai-z9tb.vercel.app)  
+> **Backend Service:** Deployed on Render (`https://theftguard-ai.onrender.com`)
+
 TheftGuard AI is an integrated platform combining machine learning screening, spot-billing electricity bill OCR analysis, and database audit persistence for electricity distribution utilities.
 
 ---
@@ -92,7 +95,44 @@ Non-technical losses (NTLs)—principally electricity theft, meter tampering, an
 
 ---
 
-## 6. Screenshot Gallery
+## 6. AI Assistant Plugins & Grounded Tools
+
+TheftGuard AI features a dedicated, zero-hallucination conversational AI workspace (`/app/chat`) equipped with 8 selectable plugins and grounded application tools. Each plugin performs real deterministic operations against live application state, client-side OCR extractions, and authenticated database records—strictly eliminating decorative buttons or invented AI responses.
+
+### 6.1 The 8 Grounded Assistant Plugins
+
+| # | Plugin | Badge | Role & Grounded Data Operation | Data Sources & Prerequisites |
+|---|---|---|---|---|
+| 1 | **General Assistant** (`general_assistant`) | `All-in-One` | Default baseline assistant. Answers general questions, defines electrical engineering concepts (kWh, sanctioned load, power factor, power vs energy), guides application navigation, and automatically synthesizes insights across loaded bills and tickets. | None (Universal fallback) |
+| 2 | **Bill Comparison** (`bill_comparison`) | `Dual-Bill` | Computes verified energy shifts (kWh), percentage changes, calendar-normalized daily burn rates (`kWh/day`), billing amounts (₹), and effective cost per unit (`₹/kWh`). | Two consecutive bills loaded in [Bill Comparison](/app/bill-comparison) or saved extractions |
+| 3 | **Bill Upload & OCR** (`bill_upload_ocr`) | `OCR Audit` | Audits scanned spot-billing receipts, checks OCR extraction confidence, and verifies arithmetic consistency: `(Current Reading - Previous Reading) × Multiplier = Units Consumed` to flag reader punch errors. | Scanned receipts in [Bill Upload](/app/bill-upload) or [Bill Comparison](/app/bill-comparison) |
+| 4 | **Electricity Theft Screening** (`theft_screening`) | `ML Screening` | Evaluates consumption anomaly batches, score distributions (min, avg, max), and categorizes accounts into Review (≥ 0.50), Elevated (0.30–0.50), and Normal (< 0.30) triage bands. | CSV screening batch uploaded or loaded from [Batch History](/app/batches) |
+| 5 | **Usage Analyst** (`usage_analyst`) | `Appliances` | Itemizes household appliance power consumption (ACs, geysers, pumps, refrigerators) based on BEE 3-Star standards and computes what percentage of a bill increase is explained by user-reported loads. | 4-question household profile completed in [Bill Comparison](/app/bill-comparison) |
+| 6 | **Reports & History** (`reports_history`) | `Audit Trail` | Summarizes field inspection tickets (`INV-YYYYMMDD-XXXX`), status lifecycles (New, In Progress, Verified, Closed), and tracks the 5-point physical verification audit checklist. | Persisted investigations in [Field Investigations](/app/investigations) |
+| 7 | **Bill Calculator** (`bill_calculator`) | `Tariff Slabs` | Simulates and calculates illustrative telescopic tariff tiers (Slab 1: 0–100, Slab 2: 101–200, Slab 3: 201+ units), fixed demand charges, 6% electricity duty, and fuel surcharges (FSA) with clearly identified modeling assumptions. | Optional active bill units (or calculates reference tiers: 100, 200, 300 units) |
+| 8 | **Electricity Help & Guidance** (`electricity_help`) | `Knowledge` | Step-by-step engineering guidance for the **Switch-Off Creep Test** (diagnosing phantom meter pulsing with main MCB OFF), reading multi-screen digital LCD meters, and disputing spot-billing punch errors. | None (Educational / Regulatory Protocol) |
+
+### 6.2 Plugin Selection & Execution Model
+- **General Assistant Default**: By default, the General Assistant chip is active, providing broad conversational Q&A and cross-domain guidance.
+- **Specialized Focus**: Clicking any specialized plugin (e.g., *Bill Calculator* or *Theft Screening*) immediately focuses the assistant persona and data grounding on that domain, deselecting General Mode.
+- **Multi-Select Capability**: Users can select multiple complementary plugins simultaneously (e.g., *Bill Comparison* + *Bill Calculator* + *Usage Analyst*).
+- **One-Click Reset**: Clicking *General Assistant* clears specialized selections and restores baseline mode. Deselecting all specialized chips also smoothly reverts to General Assistant.
+- **Direct 1-Click Execution**: Each plugin chip features a quick **Run** action button allowing users to execute the underlying tool with one click without typing a prompt. The Tools Menu dropdown (`ChatToolsMenu`) also provides immediate access to all 8 plugins.
+
+### 6.3 User Data Isolation & Security Safeguards
+- **Zero Cross-Account Leakage**: Demo datasets (`DEMO_CUSTOMERS`, synthetic bills) are strictly isolated from authenticated accounts. If an authenticated user runs a tool without uploaded data, the assistant reports an empty state with direct navigation links—never falling back to synthetic demo rows.
+- **Client-Side Privacy**: OCR execution via Tesseract.js occurs 100% within the user's browser using local trained models. Raw OCR text, camera photos, and document binaries are **never** transmitted to backend servers or logged in database records.
+- **Supabase Session Scoping**: Authenticated queries to `/ml/v1/*` carry the active Supabase JWT Bearer token, strictly enforcing Row Level Security (RLS) on all database tables.
+
+### 6.4 Realistic Limitations & Responsible AI Principles
+- **Triage Indicator, Not Proof of Theft**: Uncalibrated model screening scores identify consumption distribution anomalies to help utility managers prioritize physical site inspections. A high score **never** constitutes legal proof of electricity theft, meter tampering, or unlawful abstraction.
+- **Benign Explanations**: Sharp drops in consumption frequently stem from legitimate non-theft causes, including extended family vacations, property vacancy, seasonal shutdowns, rooftop solar net-metering, or faulty meter wiring. Inspection crews must complete the physical 5-point audit checklist before drawing conclusions.
+- **OCR Legibility**: Browser-based OCR depends on image clarity, lighting, and resolution of spot-billing paper slips. Creased, faded thermal paper, or low-resolution scans require manual verification via the editable field inputs in Bill Comparison.
+- **Offline Deterministic Fallback**: If the backend machine learning API or remote database service is unreachable, the frontend seamlessly transitions to local deterministic rule engines so billing reviews and demonstrations continue uninterrupted.
+
+---
+
+## 7. Screenshot Gallery
 
 <!-- Replace placeholders with actual application screenshots when deploying -->
 | Dashboard Overview | ML Batch Screening |
@@ -109,7 +149,7 @@ Non-technical losses (NTLs)—principally electricity theft, meter tampering, an
 
 ---
 
-## 7. Project Directory Structure
+## 8. Project Directory Structure
 
 ```
 TheftGuard-AI/
@@ -164,7 +204,7 @@ TheftGuard-AI/
 
 ---
 
-## 8. Restoration & Recovery Guide (Step-by-Step)
+## 9. Restoration & Recovery Guide (Step-by-Step)
 
 Follow these steps to restore and run TheftGuard AI v1.0.0 from an unpacked source archive or Git repository.
 
@@ -279,7 +319,7 @@ Frontend runs at `http://localhost:5173`. Open your browser to begin screening.
 
 ---
 
-## 9. Troubleshooting & FAQ
+## 10. Troubleshooting & FAQ
 
 | Symptom | Root Cause | Resolution |
 | :--- | :--- | :--- |
@@ -291,7 +331,7 @@ Frontend runs at `http://localhost:5173`. Open your browser to begin screening.
 
 ---
 
-## 10. Security & Local Evaluation Boundaries
+## 11. Security & Local Evaluation Boundaries
 
 > [!WARNING]
 > **Local / Demo Evaluation Only:**
@@ -305,7 +345,7 @@ Frontend runs at `http://localhost:5173`. Open your browser to begin screening.
 
 ---
 
-## 11. Author & Developer
+## 12. Author & Developer
 
 - **Developer:** Balraj Pranay Kumar
 - **GitHub Profile:** [https://github.com/balrajpranay](https://github.com/balrajpranay)

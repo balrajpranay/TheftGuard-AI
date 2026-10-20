@@ -27,17 +27,41 @@ import {
 } from '../lib/chatSessionStorage'
 import { executeChatTool } from '../lib/chatToolsEngine'
 import { chatWithAssistant, DEFAULT_SUGGESTIONS } from '../lib/assistantEngine'
+import { getPluginById } from '../lib/assistantPlugins'
 
 export default function AIChatWorkspace() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const { user, isAuthenticated, loading: authLoading } = useAuth()
+  const { user, isAuthenticated, isDemoMode, loading: authLoading } = useAuth()
   const currentUserId = isAuthenticated && user?.id ? user.id : null
 
   const {
     activeBillContext,
     billSlots,
     questionnaireAnswers,
+    customers,
+    uploaded,
+    investigations,
+    tariff,
   } = useAppState()
+
+  const [selectedPlugins, setSelectedPlugins] = useState(['general_assistant'])
+
+  function handleTogglePlugin(pluginId) {
+    setSelectedPlugins((prev) => {
+      if (prev.includes('general_assistant')) {
+        return [pluginId]
+      }
+      if (prev.includes(pluginId)) {
+        const next = prev.filter((id) => id !== pluginId)
+        return next.length > 0 ? next : ['general_assistant']
+      }
+      return [...prev, pluginId]
+    })
+  }
+
+  function handleSelectGeneral() {
+    setSelectedPlugins(['general_assistant'])
+  }
 
   const [sessions, setSessions] = useState(() => {
     if (authLoading) return []
@@ -229,7 +253,8 @@ export default function AIChatWorkspace() {
       review_missing_ocr: 'Review Missing OCR Fields',
     }
 
-    const toolName = toolMeta[toolId] || toolId
+    const pluginMeta = getPluginById(toolId)
+    const toolName = pluginMeta ? pluginMeta.name : toolMeta[toolId] || toolId
 
     // 1. Add user trigger message
     const userMsgId = `msg-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
@@ -254,6 +279,12 @@ export default function AIChatWorkspace() {
         billContext: activeSession.billContext || activeBillContext,
         questionnaireAnswers,
         billSlots,
+        customers,
+        uploaded,
+        investigations,
+        tariff,
+        isAuthenticated,
+        isDemoMode,
       })
 
       if (currentReqId !== currentRequestIdRef.current) return
@@ -337,6 +368,7 @@ export default function AIChatWorkspace() {
         questionnaireAnswers,
         history: priorHistory,
         signal: controller.signal,
+        activePlugins: selectedPlugins,
       })
 
       if (currentReqId !== currentRequestIdRef.current) return
@@ -430,6 +462,7 @@ export default function AIChatWorkspace() {
         questionnaireAnswers,
         history: priorHistory,
         signal: controller.signal,
+        activePlugins: selectedPlugins,
       })
 
       if (currentReqId !== currentRequestIdRef.current) return
@@ -646,6 +679,9 @@ export default function AIChatWorkspace() {
           onExecuteTool={handleExecuteTool}
           onStopGeneration={handleStopGeneration}
           loading={isTyping}
+          selectedPlugins={selectedPlugins}
+          onTogglePlugin={handleTogglePlugin}
+          onSelectGeneral={handleSelectGeneral}
         />
       </div>
 

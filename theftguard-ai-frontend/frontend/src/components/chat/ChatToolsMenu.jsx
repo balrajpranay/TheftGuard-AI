@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import Icon from '../Icon'
-import { CHAT_TOOLS } from '../../lib/chatToolsEngine'
+import { ASSISTANT_PLUGINS } from '../../lib/assistantPlugins'
 
 export default function ChatToolsMenu({
   isOpen,
@@ -36,13 +36,13 @@ export default function ChatToolsMenu({
   return (
     <div
       ref={menuRef}
-      className="absolute bottom-16 left-0 z-40 w-80 max-w-[92vw] rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl animate-in fade-in zoom-in-95 duration-100 ring-1 ring-black/5"
+      className="absolute bottom-16 left-0 z-40 w-88 max-w-[92vw] rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl animate-in fade-in zoom-in-95 duration-100 ring-1 ring-black/5 max-h-[70vh] overflow-y-auto"
       role="menu"
       aria-label="Application Tools"
     >
-      <div className="px-3 py-1.5 border-b border-slate-100 mb-1 flex items-center justify-between">
+      <div className="px-3 py-1.5 border-b border-slate-100 mb-1 flex items-center justify-between sticky top-0 bg-white/95 backdrop-blur-xs z-10">
         <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-          Grounded Application Tools
+          Grounded Assistant Plugins & Tools
         </span>
         <span className="text-[10px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded font-medium">
           Zero-Hallucination
@@ -50,7 +50,7 @@ export default function ChatToolsMenu({
       </div>
 
       <div className="space-y-1">
-        {CHAT_TOOLS.map((tool) => (
+        {ASSISTANT_PLUGINS.map((tool) => (
           <button
             key={tool.id}
             type="button"
