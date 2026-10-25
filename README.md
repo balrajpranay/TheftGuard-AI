@@ -89,7 +89,7 @@ Avoids opaque binary verdicts by segmenting uncalibrated model scores into clear
 - **Appliance Load Modeling:** A 4-question household load questionnaire estimates expected consumption based on BEE 3-Star appliance standards (air conditioners, geysers, pumps, refrigeration).
 
 ### 📋 5. Field Investigation Ticketing & 5-Point Audit
-- **Relational Ticket Lifecycle:** Automatically creates formal investigation tickets (`INV-YYYYMMDD-XXXX`) tracking status progression (`New` $\rightarrow$ `In Progress` $\rightarrow$ `Verified` $\rightarrow$ `Closed`).
+- **Relational Ticket Lifecycle:** Automatically creates formal investigation tickets (`INV-YYYYMMDD-XXXX`) tracking status progression (`New` $\rightarrow$ `Scheduled` $\rightarrow$ `In inspection` $\rightarrow$ `Evidence review` $\rightarrow$ `Closed`).
 - **5-Point Physical Inspection Checklist:** Requires on-site verification before drawing conclusions:
   1. Meter box seal integrity (unbroken / tampered / missing)
   2. Terminal cover and bypass wiring check
@@ -288,7 +288,7 @@ The TheftGuard AI authenticated interface is organized into a clean, purpose-dri
 │  ├ Bill Compare │                                                                      │
 │  ├ Tickets      │  Recent Screening Batches & Investigation Tickets                    │
 │  ├ Reports      │  ┌────────────────────────────────────────────────────────────────┐  │
-│  ├ AI Chat      │  │ INV-20261025-0104 | Meter Bypass Detected | Status: In Progress│  │
+│  ├ AI Chat      │  │ INV-20261025-0104 | Meter Bypass | Status: In inspection       │  │
 │  └ Model Info   │  └────────────────────────────────────────────────────────────────┘  │
 └─────────────────┴──────────────────────────────────────────────────────────────────────┘
 ```

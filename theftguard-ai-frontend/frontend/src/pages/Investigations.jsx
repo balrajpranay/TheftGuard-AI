@@ -18,6 +18,9 @@ export default function Investigations() {
     toggleChecklist,
     removeInvestigation,
     dbConnected,
+    dbError,
+    mutationError,
+    clearMutationError,
     refreshInvestigations,
   } = useAppState()
   const [filter, setFilter] = useState('All')
@@ -62,6 +65,23 @@ export default function Investigations() {
       >
         Track follow-up on customers you have chosen to review, and work through an inspection checklist.
       </PageHeader>
+
+      {mutationError ? (
+        <Notice tone="danger" title="Investigation Action Failed" className="mb-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span>{mutationError}</span>
+            <Button size="sm" variant="ghost" onClick={clearMutationError}>
+              Dismiss
+            </Button>
+          </div>
+        </Notice>
+      ) : null}
+
+      {dbError ? (
+        <Notice tone="danger" title="Persistence Service Offline" className="mb-5">
+          {dbError}
+        </Notice>
+      ) : null}
 
       {dbConnected ? (
         <Notice tone="ok" title="Database Connected" className="mb-5">

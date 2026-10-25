@@ -13,6 +13,13 @@ import {
 } from '../lib/dbApi'
 import { createInitialSlotState, buildAssistantBillContext } from '../lib/billComparison'
 import { useAuth } from '../context/AuthContext.js'
+import {
+  applyOptimisticUpdate,
+  rollbackOptimisticUpdate,
+  rollbackChecklistToggle,
+  restoreDeletedInvestigation,
+  isUuidTicket,
+} from '../lib/investigationMutations.js'
 
 const DEMO_CUSTOMERS = buildDemoCustomers()
 const DEFAULT_CHECKLIST = [
@@ -84,6 +91,8 @@ export function AppStateProvider({ children }) {
   const [investigations, setInvestigations] = useState([])
   const [dbConnected, setDbConnected] = useState(false)
   const [dbError, setDbError] = useState(null)
+  const [mutationError, setMutationError] = useState(null)
+  const clearMutationError = useCallback(() => setMutationError(null), [])
 
   // Ensure workspace state is cleanly isolated between real authenticated user and demo workspace
   useEffect(() => {
@@ -336,53 +345,111 @@ export function AppStateProvider({ children }) {
 
   const updateInvestigation = useCallback(
     async (id, patch) => {
-      // Optimistic state update
-      setInvestigations((list) => list.map((i) => (i.id === id ? { ...i, ...patch } : i)))
+      if (!id || !patch || typeof patch !== 'object') {
+        return { ok: false, error: 'Invalid update arguments' }
+      }
+
+      // Snapshot prior values of patched fields before applying optimistic update
+      let originalValues = null
+      setInvestigations((list) => {
+        const res = applyOptimisticUpdate(list, id, patch)
+        originalValues = res.originalValues
+        return res.list
+      })
 
       // If persistent ticket (UUID format), push patch to API
-      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
-      if (isUuid) {
+      if (isUuidTicket(id)) {
         try {
           const updated = await apiUpdateInvestigation(id, patch)
-          setInvestigations((list) => list.map((i) => (i.id === id ? normalizeInvestigation(updated) : i)))
+          const normalized = normalizeInvestigation(updated)
+          setInvestigations((list) => list.map((i) => (i.id === id ? normalized : i)))
+          setDbConnected(true)
+          setMutationError(null)
+          return { ok: true, investigation: normalized }
         } catch (err) {
           console.warn('Failed to persist investigation patch:', err)
+          // Revert optimistic values, guarding against overwriting newer user changes
+          if (originalValues) {
+            setInvestigations((list) => rollbackOptimisticUpdate(list, id, patch, originalValues))
+          }
+          const errorMsg =
+            err?.message || 'Database error: failed to update investigation ticket. Changes reverted.'
+          setMutationError(errorMsg)
+          return { ok: false, error: errorMsg }
         }
       }
+
+      return { ok: true, local: true }
     },
     [],
   )
 
   const toggleChecklist = useCallback(
     (id, index) => {
+      let originalDone = null
+      let updatedChecklist = null
+
       setInvestigations((list) => {
         const target = list.find((i) => i.id === id)
-        if (!target) return list
-        const updatedChecklist = target.checklist.map((c, n) => (n === index ? { ...c, done: !c.done } : c))
-
-        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
-        if (isUuid) {
-          apiUpdateInvestigation(id, { checklist: updatedChecklist }).catch((err) => {
-            console.warn('Failed to persist checklist update:', err)
-          })
-        }
-
+        if (!target || !Array.isArray(target.checklist) || !target.checklist[index]) return list
+        originalDone = target.checklist[index].done
+        updatedChecklist = target.checklist.map((c, n) => (n === index ? { ...c, done: !originalDone } : c))
         return list.map((i) => (i.id === id ? { ...i, checklist: updatedChecklist } : i))
       })
+
+      if (isUuidTicket(id) && updatedChecklist) {
+        apiUpdateInvestigation(id, { checklist: updatedChecklist })
+          .then((updated) => {
+            const normalized = normalizeInvestigation(updated)
+            setInvestigations((list) => list.map((i) => (i.id === id ? normalized : i)))
+            setDbConnected(true)
+            setMutationError(null)
+          })
+          .catch((err) => {
+            console.warn('Failed to persist checklist update:', err)
+            // Rollback checklist item at index if it is still in the optimistic state
+            if (originalDone !== null) {
+              setInvestigations((list) => rollbackChecklistToggle(list, id, index, originalDone))
+            }
+            const errorMsg = err?.message || 'Database error: failed to save checklist update. Reverted.'
+            setMutationError(errorMsg)
+          })
+      }
     },
     [],
   )
 
   const removeInvestigation = useCallback(async (id) => {
-    setInvestigations((list) => list.filter((i) => i.id !== id))
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
-    if (isUuid) {
+    let target = null
+    let targetIndex = -1
+
+    setInvestigations((list) => {
+      targetIndex = list.findIndex((i) => i.id === id)
+      if (targetIndex >= 0) {
+        target = list[targetIndex]
+      }
+      return list.filter((i) => i.id !== id)
+    })
+
+    if (isUuidTicket(id) && target) {
       try {
         await apiDeleteInvestigation(id)
+        setDbConnected(true)
+        setMutationError(null)
+        return { ok: true }
       } catch (err) {
         console.warn('Failed to delete persisted investigation:', err)
+        // Rollback: restore target investigation ticket into list at original position
+        setInvestigations((list) => restoreDeletedInvestigation(list, target, targetIndex))
+        const errorMsg =
+          err?.message ||
+          `Database error: failed to delete ticket ${target.ticketCode || id}. Reverted.`
+        setMutationError(errorMsg)
+        return { ok: false, error: errorMsg }
       }
     }
+
+    return { ok: true, local: true }
   }, [])
 
   const value = useMemo(
@@ -408,6 +475,8 @@ export function AppStateProvider({ children }) {
       removeInvestigation,
       dbConnected,
       dbError,
+      mutationError,
+      clearMutationError,
       refreshInvestigations,
       billSlots,
       setBillSlots,
@@ -437,6 +506,8 @@ export function AppStateProvider({ children }) {
       removeInvestigation,
       dbConnected,
       dbError,
+      mutationError,
+      clearMutationError,
       refreshInvestigations,
       billSlots,
       activeBillContext,

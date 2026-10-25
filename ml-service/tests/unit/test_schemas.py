@@ -73,6 +73,15 @@ class SchemaValidationTests(unittest.TestCase):
 
     def test_screening_batch_create_validation(self):
         """Verify screening batch threshold validation and row constraints."""
+        # Verify default thresholds align with canonical 0.30 and 0.50 values
+        default_batch = ScreeningBatchCreate(
+            file_name="defaults.csv",
+            model_sha256="dummy_sha256_hash",
+        )
+        self.assertEqual(default_batch.threshold_elevated, 0.30)
+        self.assertEqual(default_batch.threshold_review, 0.50)
+
+        # Verify explicitly provided thresholds remain fully supported
         batch_data = ScreeningBatchCreate(
             file_name="test_data.csv",
             model_sha256="dummy_sha256_hash",
@@ -91,6 +100,8 @@ class SchemaValidationTests(unittest.TestCase):
             ],
         )
         self.assertEqual(batch_data.file_name, "test_data.csv")
+        self.assertEqual(batch_data.threshold_elevated, 0.35)
+        self.assertEqual(batch_data.threshold_review, 0.65)
         self.assertEqual(len(batch_data.records), 1)
 
         # Inverted thresholds (elevated >= review) must raise ValueError

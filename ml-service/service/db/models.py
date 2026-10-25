@@ -118,13 +118,13 @@ class ScreeningBatch(Base):
     threshold_elevated: Mapped[float] = mapped_column(
         Float,
         nullable=False,
-        default=0.40,
+        default=0.30,
         doc="Elevated review threshold active at the time of screening.",
     )
     threshold_review: Mapped[float] = mapped_column(
         Float,
         nullable=False,
-        default=0.70,
+        default=0.50,
         doc="Review Recommended threshold active at the time of screening.",
     )
     status: Mapped[str] = mapped_column(

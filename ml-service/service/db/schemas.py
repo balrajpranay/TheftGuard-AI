@@ -153,8 +153,8 @@ class ScreeningBatchCreate(BaseModel):
         max_length=128,
         description="Auditing note on score nature.",
     )
-    threshold_elevated: float = Field(default=0.40, ge=0.0, le=1.0)
-    threshold_review: float = Field(default=0.70, ge=0.0, le=1.0)
+    threshold_elevated: float = Field(default=0.30, ge=0.0, le=1.0)
+    threshold_review: float = Field(default=0.50, ge=0.0, le=1.0)
     status: Literal["processing", "completed", "failed"] = Field(default="completed")
     created_by: Optional[uuid.UUID] = Field(default=None)
     records: List[ScreeningRecordCreate] = Field(
