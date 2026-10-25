@@ -14,7 +14,7 @@ export default {
         ok: '#15803D',
       },
       fontFamily: {
-        sans: ['"IBM Plex Sans"', 'ui-sans-serif', 'system-ui', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', 'sans-serif'],
+        sans: ['"IBM Plex Sans"', 'ui-sans-serif', 'system-ui', '"Nirmala UI"', '"Noto Sans Tamil"', '"Noto Sans Telugu"', '"Noto Sans Devanagari"', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', 'sans-serif'],
         display: ['"Bricolage Grotesque"', '"IBM Plex Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       borderRadius: { DEFAULT: '6px' },

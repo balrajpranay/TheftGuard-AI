@@ -223,7 +223,7 @@ export default function Results() {
             </EmptyState>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div data-tour="results-table" className="overflow-x-auto">
             <table className="w-full min-w-[640px] text-left text-sm">
               <caption className="sr-only">Customers with Model Score and review category</caption>
               <thead className="border-b border-line bg-mist text-muted">

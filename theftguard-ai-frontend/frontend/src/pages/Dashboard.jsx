@@ -50,7 +50,7 @@ export default function Dashboard() {
       <PageHeader
         title={t('dashboard.title')}
         actions={
-          <div className="flex flex-wrap items-center gap-2">
+          <>
             {isDemoMode ? (
               <Badge tone="warn">Demo Mode (Local)</Badge>
             ) : dbConnected ? (
@@ -63,7 +63,7 @@ export default function Dashboard() {
             <Button to="/app/screening" variant="primary" icon="upload">{t('dashboard.screenFile')}</Button>
             <Button to="/app/bill-comparison" icon="file">{t('dashboard.compareBills')}</Button>
             <Button to="/app/comparison" icon="compare">{t('dashboard.compareConsumption')}</Button>
-          </div>
+          </>
         }
       >
         {isDemoMode ? t('dashboard.subtitleDemo') : t('dashboard.subtitleAuth')}
@@ -103,7 +103,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <section aria-label="Summary" className="grid grid-cols-2 divide-line rounded border border-line bg-white md:grid-cols-4 md:divide-x">
+      <section aria-label="Summary" data-tour="dashboard-summary" className="grid grid-cols-2 divide-line rounded border border-line bg-white md:grid-cols-4 md:divide-x">
         {[
           [t('dashboard.customersInResults'), customers.length.toLocaleString('en-IN'), null],
           [t('dashboard.reviewRecommended'), stats.counts.review.toLocaleString('en-IN'), t('dashboard.reviewRecommendedHint')],
@@ -129,7 +129,7 @@ export default function Dashboard() {
         </p>
       </section>
 
-      <div className="mt-5 grid gap-5 lg:grid-cols-[3fr_2fr]">
+      <div className="mt-5 grid gap-5 lg:grid-cols-[3fr_2fr] items-start">
         <Panel
           title={t('dashboard.reviewCategories')}
           subtitle={t('dashboard.reviewCategoriesSub', {
@@ -226,7 +226,7 @@ export default function Dashboard() {
         )}
       </Panel>
 
-      <div className="mt-5 grid gap-5 lg:grid-cols-[3fr_2fr]">
+      <div className="mt-5 grid gap-5 lg:grid-cols-[3fr_2fr] items-start">
         <Panel
           title={t('dashboard.highestScores')}
           actions={

@@ -5,6 +5,7 @@ import App from './App'
 import { AuthProvider } from './context/AuthContext.js'
 import { LanguageProvider } from './context/LanguageContext.js'
 import { AppStateProvider } from './state/AppState'
+import { OnboardingProvider } from './context/OnboardingContext'
 import './index.css'
 
 createRoot(document.getElementById('root')).render(
@@ -13,7 +14,9 @@ createRoot(document.getElementById('root')).render(
       <AuthProvider>
         <LanguageProvider>
           <AppStateProvider>
-            <App />
+            <OnboardingProvider>
+              <App />
+            </OnboardingProvider>
           </AppStateProvider>
         </LanguageProvider>
       </AuthProvider>

@@ -22,7 +22,7 @@ export default function ModelInfo() {
           </dl>
         </Panel>
 
-        <Panel title="Test results" subtitle={`${MODEL_FACTS.testRows.toLocaleString('en-IN')} held-out customers, ${MODEL_FACTS.testPositives} labelled FLAG = 1 (${(MODEL_FACTS.baseRate * 100).toFixed(1)}%)`}>
+        <Panel data-tour="model-metrics" title="Test results" subtitle={`${MODEL_FACTS.testRows.toLocaleString('en-IN')} held-out customers, ${MODEL_FACTS.testPositives} labelled FLAG = 1 (${(MODEL_FACTS.baseRate * 100).toFixed(1)}%)`}>
           <table className="w-full text-left text-sm">
             <caption className="sr-only">Reported test metrics</caption>
             <tbody>

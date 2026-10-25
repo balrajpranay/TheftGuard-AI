@@ -529,7 +529,7 @@ export default function AIChatWorkspace() {
   const lastAssistantIndex = messages.map((m) => m.role).lastIndexOf('assistant')
 
   return (
-    <div className="flex h-[calc(100dvh-7.5rem)] sm:h-[calc(100vh-8.5rem)] min-h-[480px] sm:min-h-[580px] w-full rounded-xl sm:rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+    <div data-tour="chat-workspace" className="flex h-[calc(100dvh-7.5rem)] sm:h-[calc(100vh-8.5rem)] min-h-[480px] sm:min-h-[580px] w-full rounded-xl sm:rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
       {/* Desktop Persistent Sidebar */}
       <div className="hidden lg:block w-72 shrink-0 h-full">
         <ChatSidebar

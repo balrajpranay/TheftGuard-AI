@@ -424,7 +424,7 @@ export default function BillComparison() {
       </Notice>
 
       {/* Two-Column Bill Input Grid */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div data-tour="bill-comparison-slots" className="grid gap-6 lg:grid-cols-2">
         {/* Left Column: Previous Bill */}
         <BillSlotCard
           roleTitle="Previous Bill (Reference Month)"

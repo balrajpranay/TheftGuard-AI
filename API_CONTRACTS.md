@@ -1,5 +1,15 @@
 # API_CONTRACTS.md: TheftGuard AI service contracts
 
+> [!IMPORTANT]
+> **Legacy Documentation Notice:**
+> The contracts in Part A describe an earlier Phase 1 prototype service (`app.py`) and are **obsolete**. They do not represent the active production API.
+> The active application is versioned under `/v1/*` and implemented in the following modules:
+> - [`ml-service/service/main.py`](ml-service/service/main.py) — Core scoring and health endpoints (`/v1/health`, `/v1/model-metadata`, `/v1/predict`, `/v1/predict-batch`)
+> - [`ml-service/service/persistence_routes.py`](ml-service/service/persistence_routes.py) — Authenticated database persistence endpoints (`/v1/batches`, `/v1/investigations`, `/v1/bill-extractions`)
+> - [`ml-service/service/assistant_routes.py`](ml-service/service/assistant_routes.py) — Household usage assistant endpoints (`/v1/assistant/chat`, `/v1/assistant/health`)
+>
+> Refer directly to these source files for current endpoint signatures, authentication requirements, and request/response schemas.
+
 Phase 1 document, 17 October 2026. Part A records the **current** FastAPI service exactly as `app.py` implements it; it is unchanged. Part B lists verified input rules. Part C lists known gaps. Part D lists **proposals that are not implemented** and need approval.
 
 **Evidence labels**

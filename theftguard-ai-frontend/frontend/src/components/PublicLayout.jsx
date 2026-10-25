@@ -19,6 +19,7 @@ export default function PublicLayout() {
           <Link to="/" className="shrink-0"><Logo className="text-sm sm:text-base" /></Link>
           <nav aria-label="Site" className="hidden items-center gap-6 text-sm font-medium md:flex">
             <a href="/#how" className="hover:underline">{t('publicLayout.howItWorks')}</a>
+            <a href="/#features" className="hover:underline">{t('publicLayout.features')}</a>
             <a href="/#model" className="hover:underline">{t('publicLayout.theModel')}</a>
             <a href="/#use" className="hover:underline">{t('publicLayout.responsibleUse')}</a>
           </nav>

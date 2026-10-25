@@ -82,8 +82,8 @@ export default function Reports() {
         Preview a report from the results and comparison currently loaded, then print it or save it as a PDF from your browser.
       </PageHeader>
 
-      <div className="grid gap-5 lg:grid-cols-[2fr_5fr]">
-        <div className="space-y-5 print:hidden">
+      <div className="grid gap-5 lg:grid-cols-[2fr_5fr] items-start">
+        <div data-tour="reports-builder" className="space-y-5 print:hidden lg:sticky lg:top-4">
           <Panel title="Report details">
             <div className="space-y-4">
               <Field label="Title" htmlFor="r-title">
@@ -124,20 +124,21 @@ export default function Reports() {
           ) : null}
         </div>
 
-        <article aria-label="Report preview" className="print-sheet rounded border border-ink bg-white p-6 sm:p-8">
+        <article aria-label="Report preview" className="print-sheet rounded border border-ink bg-white p-5 sm:p-8">
           {reportContext.isDemo ? (
-            <p className="mb-4 rounded border border-gold bg-pale px-3 py-2 text-sm font-medium">
-              <DemoBadge>Demonstration</DemoBadge> {reportContext.bannerText}
-            </p>
+            <div className="mb-4 flex flex-wrap items-center gap-2 rounded border border-gold bg-pale px-3 py-2 text-sm font-medium">
+              <DemoBadge>Demonstration</DemoBadge>
+              <span>{reportContext.bannerText}</span>
+            </div>
           ) : (
-            <p className="mb-4 rounded border border-line bg-surface px-3 py-2 text-sm text-ink">
+            <div className="mb-4 rounded border border-line bg-mist px-3 py-2 text-sm text-ink">
               {reportContext.bannerText}
-            </p>
+            </div>
           )}
 
           <header className="border-b border-ink pb-4">
             <p className="text-sm text-muted">TheftGuard AI</p>
-            <h2 className="mt-1 text-3xl font-bold tracking-tight">{title || 'Untitled report'}</h2>
+            <h2 className="mt-1 text-3xl font-bold tracking-tight text-ink">{title || 'Untitled report'}</h2>
             <p className="mt-2 text-sm text-muted">
               {today()}{period ? `, covering ${period}` : ''}{author ? `, prepared by ${author}` : ''}
             </p>
@@ -145,21 +146,21 @@ export default function Reports() {
 
           {show.summary ? (
             <section className="mt-6">
-              <h3 className="text-xl font-semibold">Summary</h3>
-              <p className="mt-2 text-sm">
+              <h3 className="text-xl font-semibold text-ink">Summary</h3>
+              <p className="mt-2 text-sm leading-relaxed text-ink/90">
                 {classified.length.toLocaleString('en-IN')} customers
                 {source === 'uploaded' && uploaded ? ` from ${uploaded.fileName}` : ' in the loaded results'}.{' '}
                 {counts.unscored === classified.length
                   ? 'None has a Model Score (rows were previewed without scoring, or the ML service was not called).'
                   : `${counts.review} are in the Review Recommended band (Model Score ${thresholds.review.toFixed(2)} or higher), ${counts.elevated} are Elevated (${thresholds.elevated.toFixed(2)} to below ${thresholds.review.toFixed(2)}) and ${counts.none} have no flag.${counts.unscored > 0 ? ` (${counts.unscored} not scored or failed validation).` : ''}`}
               </p>
-              <p className="mt-2 text-sm">A Model Score ranks records for attention. It is not a probability, and a flag is not proof of electricity theft.</p>
+              <p className="mt-2 text-sm leading-relaxed text-ink/90">A Model Score ranks records for attention. It is not a probability, and a flag is not proof of electricity theft.</p>
             </section>
           ) : null}
 
           {show.flagged ? (
             <section className="mt-6">
-              <h3 className="text-xl font-semibold">Customers recommended for review</h3>
+              <h3 className="text-xl font-semibold text-ink">Customers recommended for review</h3>
               {flagged.length === 0 ? (
                 <p className="mt-2 text-sm text-muted">No customers are in the Review Recommended band for the loaded results.</p>
               ) : (
@@ -168,17 +169,17 @@ export default function Reports() {
                     <caption className="sr-only">Customers in the review band</caption>
                     <thead className="border-b border-ink">
                       <tr>
-                        <th scope="col" className="py-1.5 font-medium">Customer</th>
-                        <th scope="col" className="py-1.5 font-medium">Model Score</th>
-                        <th scope="col" className="py-1.5 font-medium">Category</th>
+                        <th scope="col" className="w-1/3 py-2 pr-4 font-semibold text-ink">Customer</th>
+                        <th scope="col" className="w-1/3 py-2 px-4 font-semibold text-ink">Model Score</th>
+                        <th scope="col" className="w-1/3 py-2 pl-4 font-semibold text-ink">Category</th>
                       </tr>
                     </thead>
                     <tbody>
                       {flagged.slice(0, 15).map((f, idx) => (
-                        <tr key={`${f.id}-${idx}`} className="border-b border-line">
-                          <th scope="row" className="py-1.5 font-medium">{f.id}</th>
-                          <td className="py-1.5">{fmtScore(f.score)}</td>
-                          <td className="py-1.5">{CATEGORIES[f.category]?.label || f.category}</td>
+                        <tr key={`${f.id}-${idx}`} className="border-b border-line last:border-0">
+                          <th scope="row" className="py-2 pr-4 font-medium text-ink">{f.id}</th>
+                          <td className="py-2 px-4 tabular-nums">{fmtScore(f.score)}</td>
+                          <td className="py-2 pl-4">{CATEGORIES[f.category]?.label || f.category}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -193,13 +194,13 @@ export default function Reports() {
 
           {show.comparison ? (
             <section className="mt-6">
-              <h3 className="text-xl font-semibold">Consumption comparison</h3>
+              <h3 className="text-xl font-semibold text-ink">Consumption comparison</h3>
               {reportContext.showComparisonData ? (
                 items.length === 0 ? (
                   <p className="mt-2 text-sm text-muted">No consumption data is loaded.</p>
                 ) : (
                   <>
-                    <p className="mt-2 text-sm">
+                    <p className="mt-2 text-sm leading-relaxed text-ink/90">
                       {reportContext.isDemo ? <span className="inline-block mr-2"><DemoBadge>Demonstration</DemoBadge></span> : null}
                       {comparison.label}. Readings before {comparison.splitDate} are historical and later readings are current.
                       {' '}{drops.length} of {items.length} customers show a decrease of {comparison.dropThreshold}% or more in average daily kWh.
@@ -210,24 +211,24 @@ export default function Reports() {
                           <caption className="sr-only">Customers with a large decrease</caption>
                           <thead className="border-b border-ink">
                             <tr>
-                              <th scope="col" className="py-1.5 font-medium">Customer</th>
-                              <th scope="col" className="py-1.5 text-right font-medium">Change</th>
-                              <th scope="col" className="py-1.5 text-right font-medium">Estimate (₹)</th>
+                              <th scope="col" className="w-1/3 py-2 pr-4 font-semibold text-ink">Customer</th>
+                              <th scope="col" className="w-1/3 py-2 px-4 text-right font-semibold text-ink">Change</th>
+                              <th scope="col" className="w-1/3 py-2 pl-4 text-right font-semibold text-ink">Estimate (₹)</th>
                             </tr>
                           </thead>
                           <tbody>
                             {drops.slice(0, 10).map((d) => (
-                              <tr key={d.ref} className="border-b border-line">
-                                <th scope="row" className="py-1.5 font-medium">{d.ref}</th>
-                                <td className="py-1.5 text-right">{pct(d.change, 1)}</td>
-                                <td className="py-1.5 text-right">{inr(estimatedImpact(d, tariff))}</td>
+                              <tr key={d.ref} className="border-b border-line last:border-0">
+                                <th scope="row" className="py-2 pr-4 font-medium text-ink">{d.ref}</th>
+                                <td className="py-2 px-4 text-right tabular-nums">{pct(d.change, 1)}</td>
+                                <td className="py-2 pl-4 text-right font-medium tabular-nums">{inr(estimatedImpact(d, tariff))}</td>
                               </tr>
                             ))}
                           </tbody>
                         </table>
                       </div>
                     ) : null}
-                    <p className="mt-2 text-sm">
+                    <p className="mt-2 text-sm leading-relaxed text-ink/90">
                       <strong>Estimated difference: {inr(impact)}.</strong> This is an estimate at ₹{num(tariff, 2)} per kWh. It assumes each customer's
                       historical daily average would have continued, and ignores season, occupancy, outages and billing rules. It is not evidence of theft.
                     </p>
@@ -243,13 +244,13 @@ export default function Reports() {
 
           {show.method ? (
             <section className="mt-6">
-              <h3 className="text-xl font-semibold">Method and limitations</h3>
-              <p className="mt-2 text-sm">
+              <h3 className="text-xl font-semibold text-ink">Method and limitations</h3>
+              <p className="mt-2 text-sm leading-relaxed text-ink/90">
                 Model screening uses a Random Forest trained on 13 customer-level summary features. On a held-out test of {MODEL_FACTS.testRows.toLocaleString('en-IN')} customers
                 it reached precision {MODEL_FACTS.metrics[0].value.toFixed(2)}, recall {MODEL_FACTS.metrics[1].value.toFixed(2)} and ROC-AUC {MODEL_FACTS.metrics[3].value.toFixed(2)}.
                 Consumption comparison is separate, plain arithmetic on kWh readings.
               </p>
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
+              <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-ink/90">
                 {MODEL_FACTS.limitations.map((l) => <li key={l}>{l}</li>)}
               </ul>
             </section>

@@ -31,7 +31,7 @@ export function readPersistedLanguage(userId = null) {
     if (typeof window !== 'undefined' && window.localStorage) {
       const key = getLanguageStorageKey(userId)
       const val = window.localStorage.getItem(key)
-      if (val === 'en' || val === 'hi' || val === 'te') {
+      if (val === 'en' || val === 'hi' || val === 'te' || val === 'ta') {
         return val
       }
     }
@@ -58,7 +58,7 @@ export function LanguageProvider({ children }) {
     if (fromStorage) return fromStorage
 
     const fromMetadata = user?.user_metadata?.preferred_language
-    if (fromMetadata && ['en', 'hi', 'te'].includes(fromMetadata)) {
+    if (fromMetadata && ['en', 'hi', 'te', 'ta'].includes(fromMetadata)) {
       persistLanguage(userId, fromMetadata)
       return fromMetadata
     }
@@ -72,7 +72,7 @@ export function LanguageProvider({ children }) {
       const stored = readPersistedLanguage(userId)
       if (stored) {
         setLanguageState(stored)
-      } else if (user?.user_metadata?.preferred_language && ['en', 'hi', 'te'].includes(user.user_metadata.preferred_language)) {
+      } else if (user?.user_metadata?.preferred_language && ['en', 'hi', 'te', 'ta'].includes(user.user_metadata.preferred_language)) {
         const metaLang = user.user_metadata.preferred_language
         persistLanguage(userId, metaLang)
         setLanguageState(metaLang)
@@ -89,7 +89,7 @@ export function LanguageProvider({ children }) {
   }, [userId, user?.user_metadata?.preferred_language])
 
   const setLanguage = useCallback((newLang) => {
-    const targetLang = ['en', 'hi', 'te'].includes(newLang) ? newLang : 'en'
+    const targetLang = ['en', 'hi', 'te', 'ta'].includes(newLang) ? newLang : 'en'
     setLanguageState(targetLang)
     persistLanguage(userId, targetLang)
 
@@ -110,6 +110,7 @@ export function LanguageProvider({ children }) {
     isEnglish: language === 'en',
     isHindi: language === 'hi',
     isTelugu: language === 'te',
+    isTamil: language === 'ta',
   }), [language, setLanguage, t])
 
   return createElement(LanguageContext.Provider, { value }, children)
@@ -129,6 +130,7 @@ export function useLanguage() {
       isEnglish: true,
       isHindi: false,
       isTelugu: false,
+      isTamil: false,
     }
   }
 
@@ -146,6 +148,7 @@ export function useLanguage() {
       isEnglish: true,
       isHindi: false,
       isTelugu: false,
+      isTamil: false,
     }
   )
 }

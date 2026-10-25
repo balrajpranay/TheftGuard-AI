@@ -32,3 +32,5 @@ TheftGuard AI datasets/
 .pytest_cache/
 .coverage
 htmlcov/
+test-results/
+playwright-report/

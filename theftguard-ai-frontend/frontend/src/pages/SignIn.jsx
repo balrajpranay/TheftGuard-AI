@@ -12,7 +12,7 @@
 import { useEffect, useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { Button, Field, inputClass, Notice, Spinner } from '../components/ui'
-import { GoogleIcon } from '../components/Icon'
+import Icon, { GoogleIcon } from '../components/Icon'
 import LanguageSelector from '../components/LanguageSelector'
 import { useAuth } from '../context/AuthContext.js'
 import { useLanguage } from '../context/LanguageContext.js'
@@ -29,12 +29,24 @@ export default function SignIn() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [verificationEmail, setVerificationEmail] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [oauthLoading, setOauthLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState(null)
   const [successMessage, setSuccessMessage] = useState(null)
 
-  const redirectPath = location.state?.from || '/app/dashboard'
+  // Default to /app/dashboard. If redirected from a protected route, preserve it EXCEPT if it was /app/chat or public routes,
+  // guaranteeing that the user lands on the primary workspace dashboard to receive onboarding guidance.
+  const rawFrom = location.state?.from
+  const redirectPath =
+    rawFrom &&
+    rawFrom !== '/app/chat' &&
+    rawFrom !== '/' &&
+    rawFrom !== '/signin'
+      ? rawFrom
+      : '/app/dashboard'
 
   // Catch email verification link errors (e.g. expired or invalid token) from URL hash or query params
   useEffect(() => {
@@ -71,9 +83,12 @@ export default function SignIn() {
     setMode(newMode)
     setErrorMessage(null)
     setSuccessMessage(null)
+    setVerificationEmail(null)
     setOauthLoading(false)
     setPassword('')
     setConfirmPassword('')
+    setShowPassword(false)
+    setShowConfirmPassword(false)
     if (newMode === 'signin') {
       setFullName('')
     }
@@ -152,16 +167,40 @@ export default function SignIn() {
         navigate(redirectPath, { replace: true })
       } else {
         const result = await signUp({ email, password, fullName, preferredLanguage: language })
+
+        // Check if user already exists:
+        // Supabase with email enumeration protection returns user with identities: [] and session: null
+        const isExistingUser =
+          result?.user &&
+          Array.isArray(result.user.identities) &&
+          result.user.identities.length === 0
+
+        if (isExistingUser) {
+          setErrorMessage(t('auth.errUserAlreadyExists') || 'An account with this email address already exists. Please sign in instead.')
+          setVerificationEmail(null)
+          return
+        }
+
         // If email confirmation is required by Supabase project settings:
         if (result?.user && !result?.session) {
-          setSuccessMessage(t('auth.accountCreatedSuccess'))
+          setVerificationEmail(email.trim())
           setPassword('')
           setConfirmPassword('')
           setFullName('')
-        } else {
-          // If session is immediately provisioned (email confirmation disabled):
-          navigate(redirectPath, { replace: true })
+          setShowPassword(false)
+          setShowConfirmPassword(false)
+          setErrorMessage(null)
+          setSuccessMessage(null)
+          return
         }
+
+        // If session is immediately provisioned (email confirmation disabled/auto-confirmed):
+        if (result?.session) {
+          navigate(redirectPath, { replace: true })
+          return
+        }
+
+        setSuccessMessage(t('auth.accountCreatedSuccess'))
       }
     } catch (err) {
       let msg = err?.message || 'Authentication failed. Please check your connection and try again.'
@@ -170,7 +209,7 @@ export default function SignIn() {
       } else if (msg.includes('Email not confirmed')) {
         msg = 'Your email address has not been verified yet. Please check your inbox and click the verification link before signing in.'
       } else if (msg.includes('User already registered') || msg.includes('already exists')) {
-        msg = 'An account with this email address already exists. Please sign in instead.'
+        msg = t('auth.errUserAlreadyExists') || 'An account with this email address already exists. Please sign in instead.'
       } else if (msg.includes('Password should be at least')) {
         msg = t('auth.errPasswordLength')
       }
@@ -248,163 +287,237 @@ export default function SignIn() {
         </Notice>
       ) : null}
 
-      <div className="mt-6">
-        <button
-          type="button"
-          onClick={handleGoogleSignIn}
-          disabled={submitting || oauthLoading}
-          aria-label={t('auth.continueGoogle')}
-          className="flex w-full items-center justify-center gap-3 rounded border border-line bg-white px-4 py-2.5 text-sm font-semibold text-ink shadow-xs transition-colors hover:bg-slate-50 hover:border-slate-400 focus:outline-hidden focus:ring-2 focus:ring-gold focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+      {verificationEmail ? (
+        <div
+          data-testid="verification-pending-card"
+          className="mt-6 rounded border border-line bg-white p-6 shadow-xs text-center"
         >
-          {oauthLoading ? (
-            <Spinner label={t('auth.connectingGoogle')} />
-          ) : (
-            <>
-              <GoogleIcon className="h-5 w-5 shrink-0" />
-              <span>{t('auth.continueGoogle')}</span>
-            </>
-          )}
-        </button>
-
-        <div className="relative my-5">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-line" />
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gold/20 text-gold mb-4">
+            <Icon name="check" className="h-6 w-6 text-gold" />
           </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-mist px-2 text-muted">
-              {mode === 'signin' ? t('auth.orEmailSignIn') : t('auth.orEmailCreate')}
+          <h2 className="text-xl font-bold tracking-tight text-ink">
+            {t('auth.checkEmailTitle') || 'Check your email to verify'}
+          </h2>
+          <p className="mt-2 text-sm text-muted">
+            {t('auth.checkEmailInstructions', { email: verificationEmail }) ||
+              `We sent a verification link to ${verificationEmail}. Click the link in your email to activate your account, then return here to sign in.`}
+          </p>
+          <div className="my-4 rounded bg-mist px-3 py-2 text-sm font-mono font-medium text-ink border border-line break-all">
+            {verificationEmail}
+          </div>
+          <div className="mt-6 flex flex-col gap-2">
+            <Button
+              type="button"
+              variant="dark"
+              onClick={() => {
+                const mail = verificationEmail
+                setVerificationEmail(null)
+                switchMode('signin')
+                setEmail(mail)
+              }}
+              className="w-full"
+            >
+              {t('auth.proceedToSignIn') || 'Proceed to sign in'}
+            </Button>
+            <button
+              type="button"
+              onClick={() => {
+                setVerificationEmail(null)
+                switchMode('register')
+              }}
+              className="mt-2 text-xs text-muted hover:text-ink underline cursor-pointer"
+            >
+              {t('auth.useDifferentEmail') || 'Use a different email'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="mt-6">
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              disabled={submitting || oauthLoading}
+              aria-label={t('auth.continueGoogle')}
+              className="flex w-full items-center justify-center gap-3 rounded border border-line bg-white px-4 py-2.5 text-sm font-semibold text-ink shadow-xs transition-colors hover:bg-slate-50 hover:border-slate-400 focus:outline-hidden focus:ring-2 focus:ring-gold focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            >
+              {oauthLoading ? (
+                <Spinner label={t('auth.connectingGoogle')} />
+              ) : (
+                <>
+                  <GoogleIcon className="h-5 w-5 shrink-0" />
+                  <span>{t('auth.continueGoogle')}</span>
+                </>
+              )}
+            </button>
+
+            <div className="relative my-5">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-line" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-mist px-2 text-muted">
+                  {mode === 'signin' ? t('auth.orEmailSignIn') : t('auth.orEmailCreate')}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="mt-2 space-y-4" noValidate>
+            {mode === 'register' ? (
+              <Field label={t('auth.fullNameLabel')} htmlFor="full-name">
+                <input
+                  id="full-name"
+                  type="text"
+                  autoComplete="name"
+                  required
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  disabled={submitting || oauthLoading}
+                  className={inputClass}
+                  placeholder={t('auth.fullNamePlaceholder')}
+                />
+              </Field>
+            ) : null}
+
+            <Field label={t('auth.emailLabel')} htmlFor="email">
+              <input
+                id="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={submitting || oauthLoading}
+                className={inputClass}
+                placeholder={t('auth.emailPlaceholder')}
+              />
+            </Field>
+
+            <Field label={t('auth.passwordLabel')} htmlFor="password">
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={submitting || oauthLoading}
+                  className={`${inputClass} pr-10`}
+                  placeholder={mode === 'register' ? t('auth.passwordRegisterPlaceholder') : t('auth.passwordPlaceholder')}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  disabled={submitting || oauthLoading}
+                  aria-label={showPassword ? t('auth.hidePassword') || 'Hide password' : t('auth.showPassword') || 'Show password'}
+                  title={showPassword ? t('auth.hidePassword') || 'Hide password' : t('auth.showPassword') || 'Show password'}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted hover:text-ink focus:outline-hidden focus-visible:text-ink focus-visible:ring-2 focus-visible:ring-gold rounded cursor-pointer disabled:opacity-50"
+                >
+                  <Icon name={showPassword ? 'eyeOff' : 'eye'} className="h-4 w-4" />
+                </button>
+              </div>
+            </Field>
+
+            {mode === 'register' ? (
+              <Field label={t('auth.confirmPasswordLabel')} htmlFor="confirm-password">
+                <div className="relative">
+                  <input
+                    id="confirm-password"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    disabled={submitting || oauthLoading}
+                    className={`${inputClass} pr-10`}
+                    placeholder={t('auth.passwordPlaceholder')}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((v) => !v)}
+                    disabled={submitting || oauthLoading}
+                    aria-label={showConfirmPassword ? t('auth.hidePassword') || 'Hide password' : t('auth.showPassword') || 'Show password'}
+                    title={showConfirmPassword ? t('auth.hidePassword') || 'Hide password' : t('auth.showPassword') || 'Show password'}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted hover:text-ink focus:outline-hidden focus-visible:text-ink focus-visible:ring-2 focus-visible:ring-gold rounded cursor-pointer disabled:opacity-50"
+                  >
+                    <Icon name={showConfirmPassword ? 'eyeOff' : 'eye'} className="h-4 w-4" />
+                  </button>
+                </div>
+              </Field>
+            ) : null}
+
+            {mode === 'register' ? (
+              <Field label={t('auth.preferredLanguageLabel')} htmlFor="preferred-language">
+                <LanguageSelector id="preferred-language" variant="dropdown" ariaLabel={t('auth.preferredLanguageLabel')} />
+              </Field>
+            ) : null}
+
+            <Button
+              type="submit"
+              variant="dark"
+              disabled={submitting || oauthLoading}
+              className="w-full"
+            >
+              {submitting ? (
+                <Spinner label={mode === 'signin' ? t('auth.signingIn') : t('auth.creatingAccount')} />
+              ) : mode === 'signin' ? (
+                t('auth.signInTab')
+              ) : (
+                t('auth.createAccountTab')
+              )}
+            </Button>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-line" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-mist px-2 text-muted">{t('auth.orEvaluateSample')}</span>
+              </div>
+            </div>
+
+            <Button
+              type="button"
+              onClick={handleContinueDemo}
+              disabled={submitting || oauthLoading}
+              variant="primary"
+              className="w-full"
+            >
+              {t('auth.continueDemo')}
+            </Button>
+          </form>
+        </>
+      )}
+
+      {!verificationEmail ? (
+        <div className="mt-6 text-center text-sm">
+          {mode === 'signin' ? (
+            <span className="text-muted">
+              {t('auth.noAccountPrompt')}{' '}
+              <button
+                type="button"
+                onClick={() => switchMode('register')}
+                className="font-medium text-ink underline underline-offset-2 hover:text-gold cursor-pointer"
+              >
+                {t('auth.createAccountTab')}
+              </button>
             </span>
-          </div>
-        </div>
-      </div>
-
-      <form onSubmit={handleSubmit} className="mt-2 space-y-4" noValidate>
-        {mode === 'register' ? (
-          <Field label={t('auth.fullNameLabel')} htmlFor="full-name">
-            <input
-              id="full-name"
-              type="text"
-              autoComplete="name"
-              required
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              disabled={submitting || oauthLoading}
-              className={inputClass}
-              placeholder={t('auth.fullNamePlaceholder')}
-            />
-          </Field>
-        ) : null}
-
-        <Field label={t('auth.emailLabel')} htmlFor="email">
-          <input
-            id="email"
-            type="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            disabled={submitting || oauthLoading}
-            className={inputClass}
-            placeholder={t('auth.emailPlaceholder')}
-          />
-        </Field>
-
-        <Field label={t('auth.passwordLabel')} htmlFor="password">
-          <input
-            id="password"
-            type="password"
-            autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            disabled={submitting || oauthLoading}
-            className={inputClass}
-            placeholder={mode === 'register' ? t('auth.passwordRegisterPlaceholder') : t('auth.passwordPlaceholder')}
-          />
-        </Field>
-
-        {mode === 'register' ? (
-          <Field label={t('auth.confirmPasswordLabel')} htmlFor="confirm-password">
-            <input
-              id="confirm-password"
-              type="password"
-              autoComplete="new-password"
-              required
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              disabled={submitting || oauthLoading}
-              className={inputClass}
-              placeholder={t('auth.passwordPlaceholder')}
-            />
-          </Field>
-        ) : null}
-
-        {mode === 'register' ? (
-          <Field label={t('auth.preferredLanguageLabel')} htmlFor="preferred-language">
-            <LanguageSelector id="preferred-language" variant="dropdown" ariaLabel={t('auth.preferredLanguageLabel')} />
-          </Field>
-        ) : null}
-
-        <Button
-          type="submit"
-          variant="dark"
-          disabled={submitting || oauthLoading}
-          className="w-full"
-        >
-          {submitting ? (
-            <Spinner label={mode === 'signin' ? t('auth.signingIn') : t('auth.creatingAccount')} />
-          ) : mode === 'signin' ? (
-            t('auth.signInTab')
           ) : (
-            t('auth.createAccountTab')
+            <span className="text-muted">
+              {t('auth.haveAccountPrompt')}{' '}
+              <button
+                type="button"
+                onClick={() => switchMode('signin')}
+                className="font-medium text-ink underline underline-offset-2 hover:text-gold cursor-pointer"
+              >
+                {t('auth.signInTab')}
+              </button>
+            </span>
           )}
-        </Button>
-
-        <div className="relative my-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-line" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-mist px-2 text-muted">{t('auth.orEvaluateSample')}</span>
-          </div>
         </div>
-
-        <Button
-          type="button"
-          onClick={handleContinueDemo}
-          disabled={submitting || oauthLoading}
-          variant="primary"
-          className="w-full"
-        >
-          {t('auth.continueDemo')}
-        </Button>
-      </form>
-
-      <div className="mt-6 text-center text-sm">
-        {mode === 'signin' ? (
-          <span className="text-muted">
-            {t('auth.noAccountPrompt')}{' '}
-            <button
-              type="button"
-              onClick={() => switchMode('register')}
-              className="font-medium text-ink underline underline-offset-2 hover:text-gold cursor-pointer"
-            >
-              {t('auth.createAccountTab')}
-            </button>
-          </span>
-        ) : (
-          <span className="text-muted">
-            {t('auth.haveAccountPrompt')}{' '}
-            <button
-              type="button"
-              onClick={() => switchMode('signin')}
-              className="font-medium text-ink underline underline-offset-2 hover:text-gold cursor-pointer"
-            >
-              {t('auth.signInTab')}
-            </button>
-          </span>
-        )}
-      </div>
+      ) : null}
 
       <p className="mt-4 text-center text-xs text-muted">
         {mode === 'signin'

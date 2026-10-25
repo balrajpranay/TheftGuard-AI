@@ -5,9 +5,12 @@ import Icon from './Icon'
 import { DemoBadge } from './ui'
 import AIAssistantDrawer from './AIAssistantDrawer'
 import LanguageSelector from './LanguageSelector'
+import WelcomeModal from './onboarding/WelcomeModal'
+import TourOverlay from './onboarding/TourOverlay'
 import { useAppState } from '../state/AppState'
 import { useAuth } from '../context/AuthContext.js'
 import { useLanguage } from '../context/LanguageContext.js'
+import { useOnboarding } from '../context/OnboardingContext'
 
 import {
   NAV,
@@ -17,23 +20,45 @@ import {
 } from '../lib/navConfig.js'
 export { NAV, SIDEBAR_COLLAPSED_STORAGE_KEY }
 
-function NavItems({ onNavigate, collapsed, onTooltip, onTooltipLeave }) {
+function getTourAttr(to) {
+  if (to === '/app/chat') return 'nav-chat'
+  if (to === '/app/dashboard') return 'nav-overview'
+  if (to === '/app/screening') return 'nav-screening'
+  if (to === '/app/results') return 'nav-results'
+  if (to === '/app/comparison') return 'nav-comparison'
+  if (to === '/app/bill-upload') return 'nav-bill-upload'
+  if (to === '/app/bill-comparison') return 'nav-bill-comparison'
+  if (to === '/app/investigations') return 'nav-investigations'
+  if (to === '/app/reports') return 'nav-reports'
+  if (to === '/app/model') return 'nav-model'
+  if (to === '/app/settings') return 'nav-settings'
+  return undefined
+}
+
+function NavItems({ onNavigate, collapsed, onTooltip, onTooltipLeave, onStartTour }) {
   const { investigations } = useAppState()
   const { t } = useLanguage()
   const open = investigations.filter((i) => i.status !== 'Closed').length
 
   return (
-    <nav aria-label="Workspace" className={`flex flex-col gap-1 ${collapsed ? 'items-center w-full' : ''}`}>
+    <nav
+      aria-label="Workspace"
+      className={`flex flex-col gap-1 flex-1 min-h-0 overflow-y-auto overflow-x-hidden ${
+        collapsed ? 'items-center w-full' : 'w-full pr-0.5'
+      }`}
+    >
       {NAV.map((n) => {
         const isChat = n.to === '/app/chat'
         const hasOpenInvestigations = n.to.endsWith('investigations') && open > 0
         const displayLabel = n.labelKey ? t(n.labelKey) : n.label
+        const tourAttr = getTourAttr(n.to)
 
         if (collapsed) {
           return (
             <NavLink
               key={n.to}
               to={n.to}
+              data-tour={tourAttr}
               onClick={() => {
                 onTooltipLeave?.()
                 onNavigate?.()
@@ -54,7 +79,7 @@ function NavItems({ onNavigate, collapsed, onTooltip, onTooltipLeave }) {
               onBlur={onTooltipLeave}
               aria-label={displayLabel}
               className={({ isActive }) =>
-                `relative flex h-10 w-10 items-center justify-center rounded-lg transition-colors cursor-pointer ${
+                `relative flex h-10 w-10 items-center justify-center rounded-lg transition-colors cursor-pointer shrink-0 ${
                   isActive
                     ? 'bg-gold text-ink font-semibold shadow-xs'
                     : isChat
@@ -90,9 +115,10 @@ function NavItems({ onNavigate, collapsed, onTooltip, onTooltipLeave }) {
           <NavLink
             key={n.to}
             to={n.to}
+            data-tour={tourAttr}
             onClick={onNavigate}
             className={({ isActive }) =>
-              `flex items-center gap-3 rounded border-l-4 px-3 py-2.5 text-sm font-medium transition-colors min-h-[44px] ${
+              `flex items-center gap-3 rounded border-l-4 px-3 py-2.5 text-sm font-medium transition-colors min-h-[44px] shrink-0 ${
                 isActive
                   ? 'border-gold bg-white/10 text-white font-semibold'
                   : isChat
@@ -101,7 +127,7 @@ function NavItems({ onNavigate, collapsed, onTooltip, onTooltipLeave }) {
               }`
             }
           >
-            <Icon name={n.icon} className={`h-5 w-5 ${isChat ? 'text-gold' : ''}`} />
+            <Icon name={n.icon} className={`h-5 w-5 shrink-0 ${isChat ? 'text-gold' : ''}`} />
             <span className="flex-1">{displayLabel}</span>
             {isChat ? (
               <span className="rounded bg-gold/20 text-gold border border-gold/40 px-1.5 py-0.2 text-[10px] font-bold tracking-wider uppercase">
@@ -116,6 +142,57 @@ function NavItems({ onNavigate, collapsed, onTooltip, onTooltipLeave }) {
           </NavLink>
         )
       })}
+
+      {/* Permanent Help Guide / Tour Replay Action */}
+      {collapsed ? (
+        <button
+          type="button"
+          data-tour="nav-help-guide"
+          onClick={() => {
+            onTooltipLeave?.()
+            onNavigate?.()
+            onStartTour?.(0)
+          }}
+          onMouseEnter={(e) =>
+            onTooltip?.(e, {
+              label: `${t('nav.helpGuide') || 'Help Guide'} (${t('nav.replayTour') || 'Replay Tour'})`,
+              badge: t('onboarding.tourBadge') || 'Tour',
+            })
+          }
+          onMouseLeave={onTooltipLeave}
+          onFocus={(e) =>
+            onTooltip?.(e, {
+              label: `${t('nav.helpGuide') || 'Help Guide'} (${t('nav.replayTour') || 'Replay Tour'})`,
+              badge: t('onboarding.tourBadge') || 'Tour',
+            })
+          }
+          onBlur={onTooltipLeave}
+          aria-label={`${t('nav.helpGuide') || 'Help Guide'} - ${t('nav.replayTour') || 'Replay Tour'}`}
+          className="relative flex h-10 w-10 items-center justify-center rounded-lg bg-gold/15 text-gold border border-gold/40 hover:bg-gold/25 hover:border-gold transition-colors cursor-pointer mt-2 shrink-0"
+        >
+          <Icon name="help" className="h-5 w-5 text-gold" />
+        </button>
+      ) : (
+        <button
+          type="button"
+          data-tour="nav-help-guide"
+          onClick={() => {
+            onNavigate?.()
+            onStartTour?.(0)
+          }}
+          aria-label={`${t('nav.helpGuide') || 'Help Guide'} - ${t('nav.replayTour') || 'Replay Tour'}`}
+          className="flex items-center gap-3 rounded border-l-4 border-gold/70 bg-gold/10 px-3 py-2.5 text-sm font-semibold text-white hover:bg-gold/20 hover:border-gold transition-colors min-h-[44px] cursor-pointer mt-2 text-left w-full shrink-0 shadow-xs group"
+        >
+          <Icon name="help" className="h-5 w-5 text-gold shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="leading-tight truncate">{t('nav.helpGuide') || 'Help Guide'}</div>
+            <div className="text-[11px] font-normal text-gold/80 leading-tight truncate">{t('nav.replayTour') || 'Replay Tour'}</div>
+          </div>
+          <span className="rounded bg-gold/25 text-gold border border-gold/40 px-1.5 py-0.5 text-[10px] font-bold tracking-wider uppercase shrink-0">
+            {t('onboarding.tourBadge') || 'Tour'}
+          </span>
+        </button>
+      )}
     </nav>
   )
 }
@@ -133,6 +210,7 @@ export default function AppShell() {
 
   const { user, isAuthenticated, isDemoMode, signOut } = useAuth()
   const { language, t } = useLanguage()
+  const { isTourActive, showWelcomeModal, startTour } = useOnboarding()
   const {
     source,
     uploaded,
@@ -206,13 +284,13 @@ export default function AppShell() {
       {/* Desktop rail */}
       <aside
         data-testid="desktop-sidebar"
-        className={`on-dark hidden shrink-0 flex-col bg-ink print:hidden lg:flex transition-[width,padding] duration-200 ease-in-out ${
+        className={`on-dark hidden shrink-0 flex-col bg-ink print:hidden lg:flex lg:sticky lg:top-0 lg:h-screen lg:max-h-screen transition-[width,padding] duration-200 ease-in-out z-20 ${
           collapsed ? 'w-16 p-2 items-center' : 'w-64 p-4'
         }`}
       >
         {collapsed ? (
           /* Collapsed Header */
-          <div className="mb-6 flex flex-col items-center gap-2">
+          <div className="mb-4 flex flex-col items-center gap-2 shrink-0">
             <Link
               to="/"
               className="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
@@ -243,7 +321,7 @@ export default function AppShell() {
           </div>
         ) : (
           /* Expanded Header */
-          <div className="mb-6 flex items-center justify-between px-1">
+          <div className="mb-4 flex items-center justify-between px-1 shrink-0">
             <Link to="/" className="flex items-center gap-2">
               <Logo tone="onDark" />
             </Link>
@@ -267,12 +345,13 @@ export default function AppShell() {
           collapsed={collapsed}
           onTooltip={showTooltip}
           onTooltipLeave={hideTooltip}
+          onStartTour={startTour}
         />
 
         {/* Footer */}
         {collapsed ? (
           /* Collapsed Footer */
-          <div className="mt-auto flex flex-col items-center gap-2 border-t border-white/15 pt-3 w-full">
+          <div className="mt-auto flex flex-col items-center gap-2 border-t border-white/15 pt-3 w-full shrink-0">
             {isAuthenticated ? (
               <>
                 <div
@@ -339,7 +418,7 @@ export default function AppShell() {
           </div>
         ) : (
           /* Expanded Footer */
-          <div className="mt-auto border-t border-white/15 pt-4 text-xs text-white/70">
+          <div className="mt-auto border-t border-white/15 pt-4 text-xs text-white/70 shrink-0">
             {isAuthenticated ? (
               <div className="space-y-1">
                 <p className="text-[11px] uppercase tracking-wider text-white/50">{t('footer.signedInAs')}</p>
@@ -380,7 +459,7 @@ export default function AppShell() {
             )}
             <div className="mt-3 border-t border-white/10 pt-2 flex items-center justify-between">
               <Link to="/" className="inline-block text-white/60 underline underline-offset-2 hover:text-white">{t('common.backToSite')}</Link>
-              <LanguageSelector variant="compact" />
+              <LanguageSelector variant="compact" tone="dark" />
             </div>
           </div>
         )}
@@ -427,8 +506,8 @@ export default function AppShell() {
       {menu ? (
         <div className="fixed inset-0 z-40 lg:hidden print:hidden" role="dialog" aria-modal="true" aria-label="Mobile navigation">
           <div className="absolute inset-0 bg-ink/60 backdrop-blur-xs" onClick={() => setMenu(false)} aria-hidden="true" />
-          <div className="on-dark absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col bg-ink p-4 shadow-2xl">
-            <div className="mb-6 flex items-center justify-between">
+          <div className="on-dark absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col bg-ink p-4 shadow-2xl h-full max-h-screen">
+            <div className="mb-4 flex items-center justify-between shrink-0">
               <Logo tone="onDark" />
               <button
                 type="button"
@@ -439,8 +518,10 @@ export default function AppShell() {
                 <Icon name="close" />
               </button>
             </div>
-            <NavItems onNavigate={() => setMenu(false)} />
-            <div className="mt-auto border-t border-white/15 pt-4 text-xs text-white/70">
+            <div className="flex-1 min-h-0 overflow-y-auto pr-1 my-1">
+              <NavItems onNavigate={() => setMenu(false)} onStartTour={startTour} />
+            </div>
+            <div className="mt-auto border-t border-white/15 pt-3 text-xs text-white/70 shrink-0">
               {isAuthenticated ? (
                 <div>
                   {user?.user_metadata?.full_name ? (
@@ -472,7 +553,7 @@ export default function AppShell() {
               )}
               <div className="mt-3 border-t border-white/10 pt-2 flex items-center justify-between">
                 <span className="text-white/60">{t('common.language')}</span>
-                <LanguageSelector variant="compact" />
+                <LanguageSelector variant="compact" tone="dark" />
               </div>
             </div>
           </div>
@@ -480,31 +561,33 @@ export default function AppShell() {
       ) : null}
 
       <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-gold bg-pale px-3 py-2 text-xs sm:text-sm print:hidden sm:px-6">
-          <DemoBadge>
-            {isChatRoute
-              ? t('topBanner.localStorageBadge')
-              : hasScores
-                ? t('topBanner.liveMlBadge')
-                : isDemoMode
-                  ? t('topBanner.demoBadge')
-                  : t('topBanner.authBadge')}
-          </DemoBadge>
-          <span>
-            {isChatRoute ? (
-              t('topBanner.chatText')
-            ) : source === 'uploaded' && uploaded ? (
-              hasScores ? (
-                t('topBanner.uploadedScored', { fileName: uploaded.fileName })
+        <div className="border-b border-gold bg-pale print:hidden">
+          <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-xs sm:text-sm sm:px-6">
+            <DemoBadge>
+              {isChatRoute
+                ? t('topBanner.localStorageBadge')
+                : hasScores
+                  ? t('topBanner.liveMlBadge')
+                  : isDemoMode
+                    ? t('topBanner.demoBadge')
+                    : t('topBanner.authBadge')}
+            </DemoBadge>
+            <span>
+              {isChatRoute ? (
+                t('topBanner.chatText')
+              ) : source === 'uploaded' && uploaded ? (
+                hasScores ? (
+                  t('topBanner.uploadedScored', { fileName: uploaded.fileName })
+                ) : (
+                  t('topBanner.uploadedPreview', { fileName: uploaded.fileName })
+                )
+              ) : isDemoMode ? (
+                t('topBanner.demoText')
               ) : (
-                t('topBanner.uploadedPreview', { fileName: uploaded.fileName })
-              )
-            ) : isDemoMode ? (
-              t('topBanner.demoText')
-            ) : (
-              t('topBanner.authText', { name: user?.user_metadata?.full_name || user?.email || 'Operator' })
-            )}
-          </span>
+                t('topBanner.authText', { name: user?.user_metadata?.full_name || user?.email || 'Operator' })
+              )}
+            </span>
+          </div>
         </div>
         <main id="main" className="mx-auto w-full max-w-7xl px-3 py-4 sm:px-6 lg:py-8 min-w-0">
           <Outlet />
@@ -512,7 +595,7 @@ export default function AppShell() {
       </div>
 
       {/* Floating Global AI Assistant Trigger */}
-      {!(isChatRoute || assistantOpen || menu) && (
+      {!(isChatRoute || assistantOpen || menu || isTourActive || showWelcomeModal) && (
         <div className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] right-[calc(1rem+env(safe-area-inset-right,0px))] sm:bottom-6 sm:right-6 z-40 print:hidden flex items-center gap-2">
           <Link
             to="/app/chat"
@@ -542,6 +625,12 @@ export default function AppShell() {
         initialQuestionnaireAnswers={questionnaireAnswers}
         onQuestionnaireChange={setQuestionnaireAnswers}
       />
+
+      {/* Welcome Modal for Eligible First-Time Users */}
+      <WelcomeModal />
+
+      {/* Interactive Guided Product Tour Overlay */}
+      <TourOverlay />
     </div>
   )
 }

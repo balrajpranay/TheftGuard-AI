@@ -39,10 +39,10 @@ import {
 } from '../src/lib/assistantEngine.js'
 
 describe('Language & Localization — Dictionary Integrity & Fallback', () => {
-  it('registers exactly 3 supported interface languages: English, Hindi, and Telugu', () => {
-    assert.equal(SUPPORTED_LANGUAGES.length, 3)
+  it('registers supported interface languages: English, Hindi, Telugu, and Tamil', () => {
+    assert.equal(SUPPORTED_LANGUAGES.length, 4)
     const codes = SUPPORTED_LANGUAGES.map((l) => l.code)
-    assert.deepEqual(codes, ['en', 'hi', 'te'])
+    assert.deepEqual(codes, ['en', 'hi', 'te', 'ta'])
 
     const telugu = SUPPORTED_LANGUAGES.find((l) => l.code === 'te')
     assert.equal(telugu.nativeName, 'తెలుగు')
@@ -51,6 +51,10 @@ describe('Language & Localization — Dictionary Integrity & Fallback', () => {
     const hindi = SUPPORTED_LANGUAGES.find((l) => l.code === 'hi')
     assert.equal(hindi.nativeName, 'हिन्दी')
     assert.equal(hindi.label, 'Hindi')
+
+    const tamil = SUPPORTED_LANGUAGES.find((l) => l.code === 'ta')
+    assert.equal(tamil.nativeName, 'தமிழ்')
+    assert.equal(tamil.label, 'Tamil')
 
     const english = SUPPORTED_LANGUAGES.find((l) => l.code === 'en')
     assert.equal(english.nativeName, 'English')

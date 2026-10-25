@@ -43,7 +43,7 @@ test.describe('TheftGuard AI — Language Support & Localization E2E Tests', () 
     // Form elements and headings should now be in Telugu
     await expect(page.getByRole('heading', { name: 'సైన్ ఇన్ చేయండి', level: 1 })).toBeVisible()
     await expect(page.getByLabel('ఈమెయిల్ చిరునామా')).toBeVisible()
-    await expect(page.getByLabel('పాస్‌వర్డ్')).toBeVisible()
+    await expect(page.getByLabel('పాస్‌వర్డ్', { exact: true })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Google తో కొనసాగించండి' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'డెమో వర్క్‌స్పేస్‌కు కొనసాగండి' })).toBeVisible()
 

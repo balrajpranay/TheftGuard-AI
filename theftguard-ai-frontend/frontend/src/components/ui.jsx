@@ -35,9 +35,11 @@ export function Badge({ tone = 'grey', children, className }) {
     grey: 'bg-mist text-muted border-line',
     ok: 'bg-white text-ok border-ok',
     info: 'bg-pale text-gold-deep border-gold',
+    warn: 'bg-amber-100 text-amber-900 border-amber-300',
+    danger: 'bg-white text-danger border-danger',
   }
   return (
-    <span className={cx('inline-flex items-center whitespace-nowrap rounded border px-2 py-0.5 text-xs font-medium', tones[tone], className)}>
+    <span className={cx('inline-flex items-center align-middle whitespace-nowrap rounded border px-2 py-0.5 text-xs font-medium', tones[tone] || tones.grey, className)}>
       {children}
     </span>
   )
@@ -60,9 +62,9 @@ export function Notice({ tone = 'info', title, children, className }) {
   return (
     <div role={tone === 'danger' ? 'alert' : 'status'} className={cx('flex gap-3 rounded border-l-4 border-y border-r border-y-line border-r-line p-3 text-sm', tones[tone], className)}>
       <Icon name={icon} className={cx('mt-0.5 h-5 w-5 shrink-0', color)} />
-      <div>
-        {title ? <p className="font-semibold">{title}</p> : null}
-        <div className="text-ink/90">{children}</div>
+      <div className="min-w-0 flex-1">
+        {title ? <p className="font-semibold text-ink">{title}</p> : null}
+        <div className={cx('text-ink/90', title ? 'mt-0.5' : '')}>{children}</div>
       </div>
     </div>
   )
@@ -90,31 +92,35 @@ export function EmptyState({ title, children, action }) {
   )
 }
 
-export function Panel({ title, subtitle, actions, children, className, bodyClassName }) {
+export function Panel({ title, subtitle, actions, children, className, bodyClassName, ...rest }) {
   return (
-    <section className={cx('rounded border border-line bg-white', className)}>
+    <section className={cx('flex flex-col rounded border border-line bg-white', className)} {...rest}>
       {title ? (
         <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-4 py-3">
-          <div>
-            <h2 className="text-base font-semibold">{title}</h2>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-base font-semibold text-ink">{title}</h2>
             {subtitle ? <p className="mt-0.5 text-sm text-muted">{subtitle}</p> : null}
           </div>
-          {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+          {actions ? <div className="flex flex-wrap items-center gap-2 shrink-0">{actions}</div> : null}
         </header>
       ) : null}
-      <div className={cx('p-4', bodyClassName)}>{children}</div>
+      <div className={cx('flex-1 p-4', bodyClassName)}>{children}</div>
     </section>
   )
 }
 
 export function PageHeader({ title, children, actions }) {
   return (
-    <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
+    <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="min-w-0 flex-1">
+        <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">{title}</h1>
         {children ? <p className="mt-1 max-w-2xl text-sm text-muted">{children}</p> : null}
       </div>
-      {actions ? <div className="flex flex-wrap items-center gap-2 print:hidden">{actions}</div> : null}
+      {actions ? (
+        <div className="flex flex-wrap items-center gap-2 shrink-0 print:hidden sm:pt-0.5">
+          {actions}
+        </div>
+      ) : null}
     </div>
   )
 }
@@ -122,9 +128,11 @@ export function PageHeader({ title, children, actions }) {
 export function Field({ label, hint, htmlFor, children, className }) {
   return (
     <div className={className}>
-      <label htmlFor={htmlFor} className="block text-sm font-medium">{label}</label>
-      {hint ? <p className="mb-1 text-xs text-muted">{hint}</p> : null}
-      <div className="mt-1">{children}</div>
+      <div className="flex flex-wrap items-baseline justify-between gap-1.5">
+        <label htmlFor={htmlFor} className="block text-sm font-medium text-ink">{label}</label>
+        {hint ? <span className="text-xs text-muted">{hint}</span> : null}
+      </div>
+      <div className="mt-1.5">{children}</div>
     </div>
   )
 }

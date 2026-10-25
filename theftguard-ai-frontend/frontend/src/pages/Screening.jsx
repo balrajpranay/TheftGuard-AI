@@ -355,6 +355,7 @@ export default function Screening() {
         <div className="space-y-5">
           <Panel title="Choose a CSV file">
             <div
+              data-tour="screening-upload"
               onDragOver={(e) => {
                 e.preventDefault()
                 setDragging(true)
