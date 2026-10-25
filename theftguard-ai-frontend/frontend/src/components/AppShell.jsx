@@ -276,7 +276,7 @@ export default function AppShell() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-mist lg:flex">
+    <div className="min-h-screen bg-mist lg:flex lg:h-screen lg:overflow-hidden">
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded focus:bg-gold focus:px-3 focus:py-2 focus:text-ink">
         Skip to main content
       </a>
@@ -284,7 +284,7 @@ export default function AppShell() {
       {/* Desktop rail */}
       <aside
         data-testid="desktop-sidebar"
-        className={`on-dark hidden shrink-0 flex-col bg-ink print:hidden lg:flex lg:sticky lg:top-0 lg:h-screen lg:max-h-screen transition-[width,padding] duration-200 ease-in-out z-20 ${
+        className={`on-dark hidden shrink-0 flex-col bg-ink print:hidden lg:flex lg:h-full lg:max-h-screen transition-[width,padding] duration-200 ease-in-out z-20 ${
           collapsed ? 'w-16 p-2 items-center' : 'w-64 p-4'
         }`}
       >
@@ -560,7 +560,7 @@ export default function AppShell() {
         </div>
       ) : null}
 
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 lg:h-screen lg:overflow-y-auto flex flex-col">
         <div className="border-b border-gold bg-pale print:hidden">
           <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-xs sm:text-sm sm:px-6">
             <DemoBadge>
