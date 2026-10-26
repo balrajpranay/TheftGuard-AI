@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useSearchParams } from 'react-router-dom'
 import { Badge, Button, EmptyState, Field, inputClass, Notice, PageHeader, Panel } from '../components/ui'
 import { useAppState } from '../state/AppState'
+import { useAuth } from '../context/AuthContext'
 import { fileSize } from '../lib/format'
 import { findInvestigationMatch } from '../lib/investigationMutations'
 
@@ -21,10 +22,13 @@ export default function Investigations() {
     removeInvestigation,
     dbConnected,
     dbError,
+    dbStatus,
+    dbLoading,
     mutationError,
     clearMutationError,
     refreshInvestigations,
   } = useAppState()
+  const { isDemoMode } = useAuth()
   const [filter, setFilter] = useState('All')
   const [openId, setOpenId] = useState(null)
   const [refreshing, setRefreshing] = useState(false)
@@ -105,8 +109,30 @@ export default function Investigations() {
       ) : null}
 
       {dbError ? (
-        <Notice tone="danger" title="Persistence Service Offline" className="mb-5">
-          {dbError}
+        <Notice
+          tone={dbStatus === 'unavailable' || dbStatus === 'auth_error' ? 'warn' : 'danger'}
+          title={
+            dbStatus === 'auth_error'
+              ? 'Authentication Session Required'
+              : dbStatus === 'unavailable'
+                ? 'Backend Service Temporarily Unavailable'
+                : 'Persistence Service Offline'
+          }
+          className="mb-5"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span>{dbError}</span>
+            <Button
+              size="sm"
+              variant="secondary"
+              icon="refresh"
+              onClick={() => refreshInvestigations({ force: true })}
+              disabled={dbLoading}
+              className="!min-h-[30px] !px-2.5 !py-1 text-xs"
+            >
+              {dbLoading ? 'Retrying...' : 'Retry'}
+            </Button>
+          </div>
         </Notice>
       ) : null}
 
@@ -115,9 +141,19 @@ export default function Investigations() {
           Investigation audit tickets are persisted in the PostgreSQL database. Status changes, checklist updates,
           notes, and outcomes are saved across sessions.
         </Notice>
-      ) : (
+      ) : isDemoMode ? (
         <Notice tone="warn" title="Operating in Demo Mode" className="mb-5">
           Database persistence service is offline. Investigation tickets are preserved in local browser session only.
+        </Notice>
+      ) : (
+        <Notice
+          tone="warn"
+          title={dbStatus === 'connecting' ? 'Connecting to Database...' : 'Persistence Service Unavailable'}
+          className="mb-5"
+        >
+          {dbStatus === 'connecting'
+            ? 'Establishing connection to backend persistence service...'
+            : 'Unable to connect to PostgreSQL persistence service. Investigation tickets cannot be synchronized.'}
         </Notice>
       )}
 

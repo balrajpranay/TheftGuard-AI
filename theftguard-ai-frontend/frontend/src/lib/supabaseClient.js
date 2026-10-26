@@ -112,10 +112,17 @@ export const supabase = new Proxy({}, {
 /**
  * Retrieves the current Supabase session access token for Bearer authentication.
  * Returns null if unauthenticated, expired, or unconfigured.
+ * Optionally forces a session refresh if supported.
  */
-export async function getSessionToken() {
+export async function getSessionToken({ forceRefresh = false } = {}) {
   if (!activeClient || !activeClient.auth) return null
   try {
+    if (forceRefresh && typeof activeClient.auth.refreshSession === 'function') {
+      const { data, error } = await activeClient.auth.refreshSession()
+      if (!error && data?.session?.access_token) {
+        return data.session.access_token
+      }
+    }
     const { data, error } = await activeClient.auth.getSession()
     if (error || !data?.session) return null
     return data.session.access_token || null

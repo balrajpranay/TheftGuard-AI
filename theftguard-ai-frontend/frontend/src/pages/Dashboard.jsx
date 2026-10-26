@@ -24,7 +24,19 @@ function median(values) {
 }
 
 export default function Dashboard() {
-  const { customers, source, hasScores, thresholds, comparison, investigations, dbConnected, dbError } = useAppState()
+  const {
+    customers,
+    source,
+    hasScores,
+    thresholds,
+    comparison,
+    investigations,
+    dbConnected,
+    dbError,
+    dbStatus,
+    dbLoading,
+    refreshInvestigations,
+  } = useAppState()
   const { isDemoMode } = useAuth()
   const { t } = useLanguage()
   const isDemo = isDemoMode || source === 'demo'
@@ -53,13 +65,34 @@ export default function Dashboard() {
           <>
             {isDemoMode ? (
               <Badge tone="warn">Demo Mode (Local)</Badge>
+            ) : dbLoading || dbStatus === 'connecting' ? (
+              <Badge tone="outline" className="animate-pulse">
+                Connecting...
+              </Badge>
             ) : dbConnected ? (
               <Badge tone="ok">Database Connected</Badge>
+            ) : dbStatus === 'auth_error' ? (
+              <Badge tone="warn">Session Required</Badge>
+            ) : dbStatus === 'unavailable' ? (
+              <Badge tone="warn">Temporarily Unavailable</Badge>
             ) : dbError ? (
               <Badge tone="danger">Database Offline</Badge>
             ) : (
               <Badge tone="outline">Connecting...</Badge>
             )}
+            {!isDemoMode && !dbConnected && (dbError || dbStatus === 'unavailable' || dbStatus === 'offline' || dbStatus === 'auth_error') ? (
+              <Button
+                variant="secondary"
+                size="sm"
+                icon="refresh"
+                onClick={() => refreshInvestigations({ force: true })}
+                disabled={dbLoading}
+                aria-label="Retry database connection"
+                className="!min-h-[36px] !px-3 !py-1 text-xs"
+              >
+                {dbLoading ? 'Retrying...' : 'Retry'}
+              </Button>
+            ) : null}
             <Button to="/app/screening" variant="primary" icon="upload">{t('dashboard.screenFile')}</Button>
             <Button to="/app/bill-comparison" icon="file">{t('dashboard.compareBills')}</Button>
             <Button to="/app/comparison" icon="compare">{t('dashboard.compareConsumption')}</Button>
@@ -277,9 +310,15 @@ export default function Dashboard() {
                 ? 'Local demo queue'
                 : dbConnected
                   ? 'Persisted in PostgreSQL database'
-                  : dbError
-                    ? `Persistence offline (${dbError})`
-                    : 'Connecting to database...'
+                  : dbStatus === 'connecting' || dbLoading
+                    ? 'Connecting to database...'
+                    : dbStatus === 'auth_error'
+                      ? 'Authentication session expired. Please sign in again.'
+                      : dbStatus === 'unavailable'
+                        ? 'Backend service is waking up or temporarily unreachable. Click Retry to reconnect.'
+                        : dbError
+                          ? `Persistence offline (${dbError})`
+                          : 'Connecting to database...'
             }
             actions={
               <Link to="/app/investigations" className="text-sm font-medium underline underline-offset-2">

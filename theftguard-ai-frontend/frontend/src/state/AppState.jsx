@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { buildDemoCustomers } from '../data/demoCustomers'
 import { buildDemoConsumption, DEMO_SPLIT_DATE } from '../data/demoConsumption'
 import { DEFAULT_THRESHOLDS } from '../lib/risk'
@@ -10,9 +10,11 @@ import {
   listInvestigations as apiListInvestigations,
   updateInvestigation as apiUpdateInvestigation,
   DbApiError,
+  DEFAULT_TIMEOUT_MS,
 } from '../lib/dbApi'
 import { createInitialSlotState, buildAssistantBillContext } from '../lib/billComparison'
 import { useAuth } from '../context/AuthContext.js'
+import { getSessionToken } from '../lib/supabaseClient.js'
 import {
   applyOptimisticUpdate,
   rollbackOptimisticUpdate,
@@ -64,7 +66,7 @@ function normalizeInvestigation(inv) {
 const Ctx = createContext(null)
 
 export function AppStateProvider({ children }) {
-  const { isAuthenticated, isDemoMode } = useAuth()
+  const { isAuthenticated, isDemoMode, loading: authLoading, session } = useAuth()
 
   // Results source: demonstration rows, or rows from an uploaded file (previewed or ML-scored).
   const [uploaded, setUploaded] = useState(null)
@@ -92,8 +94,13 @@ export function AppStateProvider({ children }) {
   const [investigations, setInvestigations] = useState([])
   const [dbConnected, setDbConnected] = useState(false)
   const [dbError, setDbError] = useState(null)
+  const [dbStatus, setDbStatus] = useState('idle') // 'idle' | 'connecting' | 'connected' | 'auth_error' | 'unavailable' | 'offline'
+  const [dbLoading, setDbLoading] = useState(false)
   const [mutationError, setMutationError] = useState(null)
   const clearMutationError = useCallback(() => setMutationError(null), [])
+
+  const refreshSeqRef = useRef(0)
+  const inFlightPromiseRef = useRef(null)
 
   // Ensure workspace state is cleanly isolated between real authenticated user and demo workspace
   useEffect(() => {
@@ -183,33 +190,109 @@ export function AppStateProvider({ children }) {
   }, [isAuthenticated, isDemoMode])
 
   // Fetch persisted investigations when authenticated
-  const refreshInvestigations = useCallback(async () => {
-    if (isDemoMode || !isAuthenticated) {
-      setDbConnected(false)
-      setDbError(null)
-      if (!isDemoMode) {
-        setInvestigations([])
-      }
-      return
-    }
-
-    try {
-      const data = await apiListInvestigations({ limit: 100 })
-      if (Array.isArray(data)) {
-        setInvestigations(data.map(normalizeInvestigation))
-        setDbConnected(true)
+  const refreshInvestigations = useCallback(
+    async ({ force = false } = {}) => {
+      if (isDemoMode) {
+        setDbConnected(false)
         setDbError(null)
+        setDbStatus('idle')
+        setDbLoading(false)
+        return
       }
-    } catch (err) {
-      setDbConnected(false)
-      setInvestigations([]) // Do not inject demo investigations for real users
-      if (err.code !== 'unauthorized') {
-        setDbError(err.message || 'Database unavailable')
-      } else {
-        setDbError('Authentication session expired. Please sign in again.')
+
+      if (authLoading) {
+        setDbConnected(false)
+        setDbError(null)
+        setDbStatus('connecting')
+        setDbLoading(true)
+        return
       }
-    }
-  }, [isAuthenticated, isDemoMode])
+
+      if (!isAuthenticated) {
+        setDbConnected(false)
+        setDbError(null)
+        setDbStatus('idle')
+        setDbLoading(false)
+        setInvestigations([])
+        return
+      }
+
+      // Concurrency guard: return existing in-flight request unless force is true
+      if (inFlightPromiseRef.current && !force) {
+        return inFlightPromiseRef.current
+      }
+
+      const seq = ++refreshSeqRef.current
+      setDbLoading(true)
+      setDbStatus('connecting')
+      setDbError(null)
+
+      const executeRefresh = async () => {
+        try {
+          // Pre-flight check: verify access token is available from session or client
+          const token = (await getSessionToken()) || session?.access_token || null
+          if (!token) {
+            if (seq === refreshSeqRef.current) {
+              setDbConnected(false)
+              setDbStatus('auth_error')
+              setDbError('Authentication session expired or not ready. Please sign in again.')
+              setInvestigations([])
+            }
+            return
+          }
+
+          const data = await apiListInvestigations(
+            { limit: 100 },
+            { requireAuth: true, maxRetries: 2, timeoutMs: DEFAULT_TIMEOUT_MS },
+          )
+
+          if (seq !== refreshSeqRef.current) {
+            // Discard stale response
+            return
+          }
+
+          if (Array.isArray(data)) {
+            setInvestigations(data.map(normalizeInvestigation))
+            setDbConnected(true)
+            setDbStatus('connected')
+            setDbError(null)
+          }
+        } catch (err) {
+          if (seq !== refreshSeqRef.current) {
+            // Discard stale response
+            return
+          }
+
+          setDbConnected(false)
+          setInvestigations([])
+
+          if (err.code === 'unauthorized' || err.status === 401) {
+            setDbStatus('auth_error')
+            setDbError('Authentication session expired. Please sign in again.')
+          } else if (err.code === 'timeout' || err.code === 'network_error') {
+            setDbStatus('unavailable')
+            setDbError('Backend persistence service is temporarily unavailable. Server may be waking up.')
+          } else if (err.code === 'database_unavailable' || err.status === 503) {
+            setDbStatus('offline')
+            setDbError(err.message || 'Database persistence service is offline.')
+          } else {
+            setDbStatus('offline')
+            setDbError(err.message || 'Database unavailable.')
+          }
+        } finally {
+          if (seq === refreshSeqRef.current) {
+            setDbLoading(false)
+            inFlightPromiseRef.current = null
+          }
+        }
+      }
+
+      const promise = executeRefresh()
+      inFlightPromiseRef.current = promise
+      return promise
+    },
+    [isAuthenticated, isDemoMode, authLoading, session],
+  )
 
   useEffect(() => {
     refreshInvestigations()
@@ -487,6 +570,8 @@ export function AppStateProvider({ children }) {
       removeInvestigation,
       dbConnected,
       dbError,
+      dbStatus,
+      dbLoading,
       mutationError,
       clearMutationError,
       refreshInvestigations,
@@ -518,6 +603,8 @@ export function AppStateProvider({ children }) {
       removeInvestigation,
       dbConnected,
       dbError,
+      dbStatus,
+      dbLoading,
       mutationError,
       clearMutationError,
       refreshInvestigations,

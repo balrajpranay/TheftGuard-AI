@@ -15,7 +15,7 @@
 
 import { getSessionToken } from './supabaseClient.js'
 
-const DEFAULT_TIMEOUT_MS = 30000
+export const DEFAULT_TIMEOUT_MS = 65000
 
 export class DbApiError extends Error {
   constructor(message, { code = 'api_error', status = null, details = null } = {}) {
@@ -63,11 +63,41 @@ export function mapReviewCategory(cat, status) {
 }
 
 /**
- * Base JSON request wrapper for /ml persistence endpoints.
+ * Abort-aware sleep helper for exponential backoff delays.
  */
-async function requestJson(
+function sleep(ms, signal) {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      return reject(new DbApiError('Request cancelled.', { code: 'cancelled' }))
+    }
+    let onAbort = null
+    const timer = setTimeout(() => {
+      if (signal && onAbort) signal.removeEventListener('abort', onAbort)
+      resolve()
+    }, ms)
+    onAbort = () => {
+      clearTimeout(timer)
+      reject(new DbApiError('Request cancelled.', { code: 'cancelled' }))
+    }
+    if (signal) {
+      signal.addEventListener('abort', onAbort, { once: true })
+    }
+  })
+}
+
+/**
+ * Executes a single HTTP request attempt against persistence endpoints.
+ */
+async function executeSingleAttempt(
   url,
-  { method = 'GET', body = null, signal = null, timeoutMs = DEFAULT_TIMEOUT_MS, headers: customHeaders = {} } = {},
+  {
+    method = 'GET',
+    body = null,
+    signal = null,
+    timeoutMs = DEFAULT_TIMEOUT_MS,
+    headers: customHeaders = {},
+    requireAuth = false,
+  } = {},
 ) {
   const controller = new AbortController()
   let timedOut = false
@@ -77,12 +107,14 @@ async function requestJson(
     controller.abort()
   }, timeoutMs)
 
+  let onParentAbort = null
   if (signal) {
     if (signal.aborted) {
       clearTimeout(timer)
       throw new DbApiError('Request cancelled.', { code: 'cancelled' })
     }
-    signal.addEventListener('abort', () => controller.abort(), { once: true })
+    onParentAbort = () => controller.abort()
+    signal.addEventListener('abort', onParentAbort, { once: true })
   }
 
   const headers = { Accept: 'application/json', ...customHeaders }
@@ -98,9 +130,27 @@ async function requestJson(
       const token = await getSessionToken()
       if (token) {
         headers['Authorization'] = `Bearer ${token}`
+      } else if (requireAuth) {
+        throw new DbApiError('Authentication required. Bearer token is missing.', {
+          code: 'unauthorized',
+          status: 401,
+        })
       }
-    } catch {
-      // Continue unauthenticated if token retrieval encounters an issue
+    } catch (err) {
+      if (err instanceof DbApiError) {
+        clearTimeout(timer)
+        if (signal && onParentAbort) signal.removeEventListener('abort', onParentAbort)
+        throw err
+      }
+      if (requireAuth) {
+        clearTimeout(timer)
+        if (signal && onParentAbort) signal.removeEventListener('abort', onParentAbort)
+        throw new DbApiError('Authentication required. Failed to obtain session token.', {
+          code: 'unauthorized',
+          status: 401,
+        })
+      }
+      // Continue unauthenticated if requireAuth is false (e.g. testing)
     }
   }
 
@@ -112,7 +162,14 @@ async function requestJson(
       signal: controller.signal,
     })
 
+    if (signal?.aborted || controller.signal.aborted) {
+      throw new DbApiError('Request cancelled.', { code: 'cancelled' })
+    }
+
     const text = await res.text()
+    if (signal?.aborted || controller.signal.aborted) {
+      throw new DbApiError('Request cancelled.', { code: 'cancelled' })
+    }
     let data = null
     try {
       data = text ? JSON.parse(text) : null
@@ -181,6 +238,64 @@ async function requestJson(
     )
   } finally {
     clearTimeout(timer)
+    if (signal && onParentAbort) {
+      signal.removeEventListener('abort', onParentAbort)
+    }
+  }
+}
+
+/**
+ * Base JSON request wrapper for /ml persistence endpoints with automatic retries for idempotent queries.
+ */
+export async function requestJson(
+  url,
+  {
+    method = 'GET',
+    body = null,
+    signal = null,
+    timeoutMs = DEFAULT_TIMEOUT_MS,
+    headers = {},
+    requireAuth = false,
+    maxRetries = method === 'GET' ? 2 : 0,
+    retryDelayMs = 400,
+  } = {},
+) {
+  let attempt = 0
+
+  while (true) {
+    try {
+      return await executeSingleAttempt(url, {
+        method,
+        body,
+        signal,
+        timeoutMs,
+        headers,
+        requireAuth,
+      })
+    } catch (err) {
+      // Do not retry cancelled requests
+      if (signal?.aborted || err.code === 'cancelled') {
+        throw err
+      }
+
+      // Check if error is transient / retryable (timeouts, network disconnects, 5xx server errors)
+      // Permanent 4xx client errors (401, 403, 404, 409, 422) and non-idempotent writes are NOT retried
+      const isRetryableError =
+        err.code === 'timeout' ||
+        err.code === 'network_error' ||
+        (typeof err.status === 'number' && err.status >= 500 && err.status !== 501)
+
+      const canRetry = attempt < maxRetries && isRetryableError
+
+      if (!canRetry) {
+        throw err
+      }
+
+      attempt++
+      // Exponential backoff with small delay and jitter
+      const backoff = retryDelayMs * Math.pow(2, attempt - 1) + Math.random() * (retryDelayMs * 0.5)
+      await sleep(backoff, signal)
+    }
   }
 }
 
