@@ -1,4 +1,4 @@
-# TheftGuard AI — Electricity Theft Detection & Investigation Audit Platform
+# TheftGuard AI — Electricity Theft Detection & Field Audit Platform
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python: 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
@@ -7,49 +7,51 @@
 [![Vite: 5.4](https://img.shields.io/badge/Vite-5.4-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
 [![Tailwind CSS: 3.4](https://img.shields.io/badge/TailwindCSS-3.4-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![PostgreSQL: 15+](https://img.shields.io/badge/PostgreSQL-15%2B-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Supabase Auth](https://img.shields.io/badge/Supabase-Auth%20%26%20RLS-3ECF8E?logo=supabase&logoColor=white)](https://supabase.com/)
-[![Tests: 533 total, 531 passed, 2 skipped](https://img.shields.io/badge/Tests-533_total%2C_531_passed%2C_2_skipped-brightgreen)](theftguard-ai-frontend/frontend/test)
+[![Supabase Auth & RLS](https://img.shields.io/badge/Supabase-Auth%20%26%20RLS-3ECF8E?logo=supabase&logoColor=white)](https://supabase.com/)
+[![Tests: 565 total (563 passed, 2 skipped)](https://img.shields.io/badge/Tests-565_total%2C_563_passed%2C_2_skipped-brightgreen)](#16-current-verified-test-counts)
 
-> **Live Application:** [https://theft-guard-ai-z9tb.vercel.app](https://theft-guard-ai-z9tb.vercel.app)
-> **Backend Service:** Deployed on Render (`https://theftguard-ai.onrender.com`)
-> **Academic Context:** Bachelor of Technology Final-Year Machine Learning Capstone / Portfolio Project
+> **Live Application:** [https://theft-guard-ai-z9tb.vercel.app](https://theft-guard-ai-z9tb.vercel.app)<br/>
+> **Backend Service:** Deployed on Render (`https://theftguard-ai.onrender.com`)<br/>
+> **Academic Context:** Bachelor of Technology Final-Year Machine Learning Capstone / Portfolio Project<br/>
 > **Author:** Balraj Pranay Kumar ([@balrajpranay](https://github.com/balrajpranay))
 
 ---
 
 ## Table of Contents
 
-1. [Executive Overview & Problem Statement](#1-executive-overview--problem-statement)
-2. [Key Implemented Capabilities](#2-key-implemented-capabilities)
-3. [Technology Stack](#3-technology-stack)
-4. [System Architecture & Data Flow](#4-system-architecture--data-flow)
-5. [Machine Learning Pipeline & Evaluation Metrics](#5-machine-learning-pipeline--evaluation-metrics)
-6. [Dataset Description & Attribution](#6-dataset-description--attribution)
-7. [Application UI Tour & Workflow](#7-application-ui-tour--workflow)
-8. [AI Assistant Plugins & Grounded Tools](#8-ai-assistant-plugins--grounded-tools)
-9. [Database Schema & Row Level Security](#9-database-schema--row-level-security)
-10. [Local Installation & Setup Guide](#10-local-installation--setup-guide)
-11. [Environment Variables Configuration](#11-environment-variables-configuration)
-12. [Running the Application](#12-running-the-application)
-13. [Verification & Automated Test Suite](#13-verification--automated-test-suite)
-14. [Deployment Architecture](#14-deployment-architecture)
-15. [Responsible AI Principles & Ethical Use](#15-responsible-ai-principles--ethical-use)
-16. [Current Limitations & Future Enhancements](#16-current-limitations--future-enhancements)
-17. [Repository Structure](#17-repository-structure)
-18. [License & Attribution](#18-license--attribution)
+1. [Project Overview & Summary](#1-project-overview--summary)
+2. [Problem Statement](#2-problem-statement)
+3. [Objectives & Intended Stakeholders](#3-objectives--intended-stakeholders)
+4. [Key Implemented Features](#4-key-implemented-features)
+5. [Technology Stack](#5-technology-stack)
+6. [Architecture & Request/Data Flow](#6-architecture--requestdata-flow)
+7. [Machine Learning Pipeline & Evaluation Metrics](#7-machine-learning-pipeline--evaluation-metrics)
+8. [Electricity-Bill OCR & Comparison Workflows](#8-electricity-bill-ocr--comparison-workflows)
+9. [Investigation Ticket Lifecycle & Duplicate Prevention](#9-investigation-ticket-lifecycle--duplicate-prevention)
+10. [Authentication, Supabase Persistence & User Data Isolation](#10-authentication-supabase-persistence--user-data-isolation)
+11. [AI Assistant Plugins & Grounded Tools](#11-ai-assistant-plugins--grounded-tools)
+12. [Local Setup & Installation Instructions](#12-local-setup--installation-instructions)
+13. [Environment Variable Configuration](#13-environment-variable-configuration)
+14. [Running the Application Locally](#14-running-the-application-locally)
+15. [Testing Instructions & Verification](#15-testing-instructions--verification)
+16. [Current Verified Test Counts](#16-current-verified-test-counts)
+17. [Deployment Links & Production Architecture](#17-deployment-links--production-architecture)
+18. [Known Limitations & Responsible-Use Disclaimer](#18-known-limitations--responsible-use-disclaimer)
+19. [Project Structure & Development Notes](#19-project-structure--development-notes)
+20. [License & Citation](#20-license--citation)
 
 ---
 
-## 1. Executive Overview & Problem Statement
+## 1. Project Overview & Summary
 
-Non-technical losses (NTLs)—primarily electricity theft, meter tampering, illegal line tapping, and spot-billing punch errors—cause billions of dollars in lost revenue for electrical distribution utilities worldwide. In emerging distribution networks, utilities often lose between 10% and 30% of supplied energy to unmetered consumption.
+**TheftGuard AI** is an end-to-end machine learning decision support and field audit platform built for electrical distribution utilities. It bridges the gap between high-dimensional statistical anomaly detection and daily utility field operations.
 
-Traditional utility field auditing relies heavily on random manual inspections or tip-offs. This approach has critical flaws:
-- **Low Hit-Rate & Resource Drain:** Field teams inspect hundreds of compliant consumers to locate a handful of tampered meters.
-- **Billing Punch Errors:** Billing personnel frequently mistype digital meter LCD readings on spot-billing thermal printers, creating artificial billing disputes that are mistakenly flagged as theft.
-- **Black-Box Skepticism:** Field engineers and legal adjudicators reject opaque machine learning predictions without transparent decision thresholds, feature baselines, or physical verification audit trails.
-
-**TheftGuard AI** is an integrated machine learning decision support and field audit platform designed for utility operators. It combines high-throughput statistical anomaly screening, client-side optical character recognition (OCR) of spot bills, relational investigation ticket management, and an interactive domain-grounded conversational assistant.
+The platform provides:
+- **High-throughput ML batch screening** of consumer consumption profiles using an audited 250-tree Random Forest pipeline.
+- **Client-side optical character recognition (OCR)** for spot-billing thermal slips and paper receipts to catch meter-reader typographical punch errors before deploying field crews.
+- **Relational field investigation management** with duplicate ticket prevention, status lifecycles, and a 5-point physical verification audit trail.
+- **Grounded, deterministic conversational assistance** with 8 domain plugins providing zero-hallucination bill explanations, appliance load modeling, and engineering test protocols.
+- **Enterprise-grade multi-tenant security** backed by PostgreSQL Row Level Security (RLS) and cryptographically verified Supabase JWTs.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────┐
@@ -63,79 +65,107 @@ Traditional utility field auditing relies heavily on random manual inspections o
 
 ---
 
-## 2. Key Implemented Capabilities
+## 2. Problem Statement
 
-### 🔍 1. High-Throughput Machine Learning Screening
-- **13 Engineered Consumption Features:** Evaluates statistical consumption metrics (valid readings, zero counts, positive percentages, observed means/medians/standard deviations) instead of raw 1,000+ day time-series.
-- **Client-Side Data Validation:** Pre-validates CSV uploads against feature ranges, missing values, and formatting rules before network transmission.
-- **Chunked Batch Scoring:** Streams rows in 50-row chunks with live progress meters, preventing browser freezes during multi-thousand-row uploads.
-- **SHA-256 Model Integrity Check:** Enforces cryptographic hash verification (`442981aa7f...`) at FastAPI server startup before accepting scoring requests.
+Non-technical losses (NTLs)—primarily unmetered line tapping, physical meter tampering, neutral loop tampering, and spot-billing data-entry punch errors—cause billions of dollars in revenue leakage annually for power utilities globally. In developing and transitioning networks, NTLs routinely account for 10% to 30% of supplied energy.
 
-### 📊 2. Transparent 3-Tier Risk Classification
-Avoids opaque binary verdicts by segmenting uncalibrated model scores into clear operational triage bands:
-- **Normal (`Score < 0.30`):** Consistent with typical consumer profiles in the training distribution.
-- **Elevated Risk (`0.30 ≤ Score < 0.50`):** Moderate consumption irregularities warranting routine review.
-- **Review Recommended (`Score ≥ 0.50`):** Significant statistical anomaly pattern resembling labeled abnormal training records.
-
-### 🧾 3. Spot-Billing OCR & Arithmetic Audit
-- **In-Browser Tesseract.js OCR:** Scans paper electricity receipts locally using offline trained data (`eng.traineddata`).
-- **Arithmetic Punch-Error Detection:** Validates physical billing arithmetic:
-  $$\text{Units Billed} \stackrel{?}{=} (\text{Current Reading} - \text{Previous Reading}) \times \text{Multiplier}$$
-  Distinguishes meter reader typographical errors from actual consumer energy theft.
-- **Strict Data Minimization:** Full-page camera photos, PDFs, and raw OCR text dumps are processed purely in-memory and are never stored or transmitted to backend servers.
-
-### ⚖️ 4. Dual-Bill Comparison & Household Profiling
-- **Calendar-Normalized Burn Rates:** Computes normalized daily consumption rates ($\text{kWh/day}$), billing shifts (₹), and effective unit costs ($\text{₹/kWh}$) across consecutive billing cycles.
-- **Appliance Load Modeling:** A 4-question household load questionnaire estimates expected consumption based on BEE 3-Star appliance standards (air conditioners, geysers, pumps, refrigeration).
-
-### 📋 5. Field Investigation Ticketing & 5-Point Audit
-- **Relational Ticket Lifecycle:** Automatically creates formal investigation tickets (`INV-YYYYMMDD-XXXX`) tracking status progression (`New` $\rightarrow$ `Scheduled` $\rightarrow$ `In inspection` $\rightarrow$ `Evidence review` $\rightarrow$ `Closed`).
-- **5-Point Physical Inspection Checklist:** Requires on-site verification before drawing conclusions:
-  1. Meter box seal integrity (unbroken / tampered / missing)
-  2. Terminal cover and bypass wiring check
-  3. Optical port test and display pulse inspection
-  4. Neutral loop and earth leakage measurement
-  5. Connected load verification against sanctioned load (kW)
-
-### 💬 6. Grounded AI Assistant & 8 Specialized Plugins
-- **Deterministic & Grounded Tools:** Dedicated chat workspace (`/app/chat`) and global floating drawer with 8 selectable plugins operating on real session data.
-- **Zero Hallucination Guarantee:** Tools report missing prerequisite data rather than generating speculative or fabricated responses.
-- **Offline Fallback Engine:** Operates autonomously in local/offline mode if external AI provider keys are unconfigured.
-
-### 🌐 7. Multilingual Support & Accessible Ergonomics
-- **4 Languages Supported:** Dynamic real-time language switching across English, Hindi (हिन्दी), Telugu (తెలుగు), and Tamil (தமிழ்).
-- **Collapsible Desktop Rail:** Collapsible navigation rail (expanded 256px to collapsed 64px) with floating tooltips and keyboard shortcuts (`Ctrl+Shift+S`).
-- **Independent Workspace Scrolling:** Stationary full-height desktop sidebar (`h-screen`) paired with an independently scrollable content area (`overflow-y-auto`).
-- **Interactive Onboarding Guide:** 8-step product walkthrough with spotlight SVG masking, first-login Welcome Modal, and persistent Help Guide replay.
+Traditional utility field auditing struggles with three systemic challenges:
+1. **Low Hit-Rate & Resource Drain:** Field enforcement crews rely on random door-to-door checks or unverified consumer tip-offs, inspecting hundreds of compliant meters to find a single tampered installation.
+2. **Billing Punch Errors Mistaken for Theft:** Spot-billing agents operating hand-held thermal printers frequently mistype digital LCD meter readings. These clerical errors produce sudden artificial consumption drops or spikes that look like energy theft on paper, triggering unwarranted disputes.
+3. **Black-Box Skepticism & Legal Vulnerability:** Utility enforcement divisions and legal tribunals reject opaque machine learning scores that lack transparent feature baselines, clear triage thresholds, and physical verification audit trails.
 
 ---
 
-## 3. Technology Stack
+## 3. Objectives & Intended Stakeholders
+
+### Core Objectives
+1. **Operational Triage:** Replace binary black-box verdicts with transparent 3-tier risk bands (`Normal`, `Elevated Risk`, `Review Recommended`) based on 13 compressed consumption features.
+2. **Pre-Field Clerical Screening:** Verify spot-billing arithmetic on the consumer's receipt client-side to filter out meter-reader typographical mistakes before dispatching inspection teams.
+3. **Immutable Audit Trail:** Provide end-to-end relational tracking from initial anomaly detection through on-site physical checklist execution (`INV-YYYYMMDD-XXXX`).
+4. **Data Minimization & Privacy:** Guarantee that consumer camera scans, receipt photos, and raw OCR text dumps never leave browser memory.
+
+### Intended Stakeholders
+- **Utility Revenue Protection & Vigilance Teams:** Prioritize high-risk accounts and organize inspection schedules based on empirical anomaly scores.
+- **Field Inspection Crews & Line Engineers:** Execute standardized 5-point physical verification protocols on site and log evidence directly into formal investigation records.
+- **Billing Dispute & Grievance Adjudicators:** Validate spot-bill reading arithmetic, compare consecutive billing cycles, and resolve typographical punch errors without punitive escalations.
+- **Academic Evaluators & Machine Learning Recruiters:** Review an end-to-end, production-grade implementation of applied machine learning, robust web architecture, and comprehensive test coverage.
+
+---
+
+## 4. Key Implemented Features
+
+### 🔍 1. High-Throughput Machine Learning Screening
+- **13 Statistical Summary Features:** Evaluates statistical consumption patterns (valid readings, zero counts, positive percentages, observed means/medians/standard deviations) instead of raw 1,000+ day time-series matrices.
+- **Client-Side Pre-Validation:** Validates CSV structure, feature ranges, missing values, and data types in the browser prior to network transmission.
+- **Chunked Batch Scoring:** Streams rows in 50-row chunks with live progress meters, ensuring smooth UI performance even on multi-thousand-row datasets.
+- **SHA-256 Model Cryptographic Check:** Enforces integrity verification of `validated_candidate_pipeline.joblib` at FastAPI startup (`442981aa7f...`).
+
+### 📊 2. Transparent 3-Tier Risk Triage
+- **Normal (`Score < 0.30`):** Consumption profile matches typical baseline patterns in the training distribution.
+- **Elevated Risk (`0.30 ≤ Score < 0.50`):** Moderate irregularities warranting routine desk review.
+- **Review Recommended (`Score ≥ 0.50`):** Statistical anomaly pattern resembling labeled abnormal training accounts.
+
+### 🧾 3. Spot-Billing OCR & Arithmetic Verification
+- **In-Browser Tesseract.js OCR:** Parses paper electricity receipts locally using offline trained models (`eng.traineddata`).
+- **Arithmetic Punch-Error Detection:** Validates physical billing arithmetic by comparing meter readings against billed units:
+  $$\Delta = \text{Current Reading} - \text{Previous Reading}$$
+  Flags a discrepancy warning if $|\Delta - \text{Units Billed}| > 1.0\text{ kWh}$, isolating typographical data-entry errors and meter multipliers (MF) from unmetered consumption.
+- **Strict Data Minimization:** Full-page camera photos, PDFs, and raw OCR text dumps are processed purely in-memory and are never sent to or stored on backend servers.
+
+### ⚖️ 4. Dual-Bill Comparison & Household Profiling
+- **Calendar-Normalized Burn Rates:** Computes daily consumption rates ($\text{kWh/day}$), billing shifts (₹), and effective unit costs ($\text{₹/kWh}$) across consecutive billing cycles.
+- **Appliance Load Modeling:** A 4-question household load questionnaire estimates expected consumption based on BEE 3-Star appliance standards (air conditioners, geysers, pumps, refrigeration).
+
+### 📋 5. Field Investigation Ticketing & Duplicate Prevention
+- **Relational Ticket Lifecycle:** Automatically creates formal investigation tickets (`INV-YYYYMMDD-XXXX`) tracking status progression (`New` $\rightarrow$ `Scheduled` $\rightarrow$ `In inspection` $\rightarrow$ `Evidence review` $\rightarrow$ `Closed`).
+- **Duplicate Prevention with Deep Linking:** Prevents redundant ticket creation for consumers already in the queue. Displays an informational notice with a **"View Existing Investigation"** action that deep-links directly to the ticket (`/app/investigations?id=...&ticket=...`), expands its accordion, and highlights it.
+- **5-Point Field Inspection Checklist:** Provides an interactive on-site audit protocol:
+  1. Confirm customer and meter identity
+  2. Compare meter reading with billing record
+  3. Check meter seal and enclosure integrity
+  4. Review connected load against sanctioned contract load
+  5. Record photographs and field notes
+
+### 💬 6. Grounded AI Assistant & 8 Specialized Plugins
+- **Deterministic & Grounded Tools:** Dedicated workspace (`/app/chat`) and global floating drawer with 8 selectable plugins operating on active session data.
+- **Zero Hallucination Guarantee:** Tools report missing prerequisite data rather than generating speculative answers.
+- **Autonomous Local Fallback:** Runs locally in offline fallback mode if external AI provider keys are not configured.
+
+### 🌐 7. Multilingual Support & Ergonomic UI
+- **4 Languages:** Instant switching across English, Hindi (हिन्दी), Telugu (తెలుగు), and Tamil (தமிழ்).
+- **Collapsible Navigation Rail:** Desktop sidebar collapses from 256px to 64px with floating tooltips and keyboard shortcuts (`Ctrl+Shift+S`).
+- **Independent Workspace Scrolling:** Fixed desktop sidebar paired with an independently scrollable content workspace and dark-themed scrollbar.
+- **Interactive Onboarding Tour:** 8-step product walkthrough with SVG spotlight masking, first-login Welcome Modal, and persistent Help Guide replay.
+
+---
+
+## 5. Technology Stack
 
 | Layer | Technology | Version | Purpose & Architectural Role |
 | :--- | :--- | :--- | :--- |
-| **Frontend Framework** | React | `18.3.1` | Single-page application, component hierarchy, responsive UI |
+| **Frontend Framework** | React | `18.3.1` | Single-page application, component hierarchy, responsive state |
 | **Build Tool & Bundler** | Vite | `5.4.11` | Build tooling, Hot Module Replacement, and development reverse proxy |
-| **Routing** | React Router DOM | `6.28.0` | Client-side routing, protected workspace routes, public views |
+| **Routing** | React Router DOM | `6.28.0` | Client-side routing, protected workspace routes, public landing views |
 | **Styling & Design** | Tailwind CSS | `3.4.17` | Utility-first styling with custom palette (`ink`, `gold`, `mist`, `pale`) |
 | **Data Visualization** | Recharts | `2.15.0` | Risk distribution bar charts, trend curves, and metric badges |
-| **Client-Side OCR** | Tesseract.js | `7.0.0` | Browser-based offline OCR using local `eng.traineddata` model |
-| **Client Auth SDK** | Supabase JS | `2.118.0` | Authentication session management, Google OAuth, and JWT handling |
+| **Client-Side OCR** | Tesseract.js | `7.0.0` | In-browser offline OCR using local `eng.traineddata` model |
+| **Client Auth SDK** | Supabase JS | `2.118.0` | Session management, Google OAuth, and JWT handling |
 | **Backend Framework** | FastAPI | `0.115+` | Asynchronous REST API, Pydantic v2 schemas, and dependency injection |
-| **ASGI Server** | Uvicorn (standard) | `0.30+` | High-performance ASGI production server |
+| **ASGI Server** | Uvicorn (standard) | `0.30+` | High-performance production ASGI server |
 | **ML Engine & Pipeline** | Scikit-Learn | `1.5+` | 250-tree Random Forest pipeline with median SimpleImputer |
 | **Data Processing** | Pandas & NumPy | `2.2+` | Array operations, DataFrame parsing, and bounds validation |
-| **Object Serialization** | Joblib | `1.4+` | Pipeline binary loading and model metadata extraction |
+| **Object Serialization** | Joblib | `1.4+` | Pipeline binary loading and metadata extraction |
 | **Database ORM** | SQLAlchemy | `2.0+` | Relational mapping, transactional scopes, and repository patterns |
 | **Database Driver** | Psycopg v3 | `3.1+` | High-performance PostgreSQL database adapter |
 | **JWT Verification** | PyJWT (crypto) | `2.8+` | Cryptographic JWT verification (ES256, RS256, HS256) |
 | **Database Service** | PostgreSQL (Supabase) | `15+` | Relational audit storage with Row Level Security (RLS) policies |
-| **Testing Frameworks** | Node.js Test / Playwright | `v20+` / `1.64` | 296 frontend unit tests + 77 end-to-end browser tests |
-| **Backend Testing** | Python `unittest` | `3.10+` | 160 backend unit and integration test cases |
+| **Frontend Unit Testing**| Node.js Test Runner | `v20+` / `v24+` | 325 unit test cases (assertions, mutations, assistant, formatters) |
+| **Browser E2E Testing** | Playwright | `1.64.1` | 80 browser end-to-end tests across desktop and mobile viewports |
+| **Backend Testing** | Python `unittest` | `3.10+` | 160 unit and integration tests (158 passed, 2 optional skipped) |
 
 ---
 
-## 4. System Architecture & Data Flow
+## 6. Architecture & Request/Data Flow
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────┐
@@ -165,16 +195,16 @@ Avoids opaque binary verdicts by segmenting uncalibrated model scores into clear
                └──────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Network Security & Data Flow Guarantees
-1. **Network Isolation:** Browser clients connect to backend persistence endpoints through the reverse proxy (`/ml/*` mapped to `:8000`), preventing public exposure of database connection strings or infrastructure credentials.
-2. **Stateless JWT Validation:** Every request to `/v1/batches`, `/v1/investigations`, and `/v1/bill-extractions` carries a Supabase Bearer token verified against Supabase public keys or HMAC secrets.
-3. **Data Minimization:** No raw billing slip photographs, PDFs, or unparsed text dumps are accepted by the backend or stored in database columns. Only parsed meter readings and numerical discrepancy flags are retained.
+### Request & Data Flow
+1. **Screening Batch Flow:** The client parses CSV files in-memory, validates feature bounds against `training_ranges.json`, and sends 50-row chunks to `POST /v1/predict-batch`. The backend verifies input schema, executes the Scikit-learn pipeline, and returns model scores and triage classifications. When authenticated, the batch and records are persisted to PostgreSQL.
+2. **Reverse Proxy Security:** In development, Vite dev server proxies `/ml/*` to `http://127.0.0.1:8000`. In production, Vercel routes `/ml/:path*` to Render (`https://theftguard-ai.onrender.com/:path*`). Frontend clients never contact PostgreSQL directly or hold database connection credentials.
+3. **Stateless JWT Validation:** Authenticated endpoints (`/v1/batches`, `/v1/investigations`, `/v1/bill-extractions`) require a Supabase Bearer JWT, verified against public keys or HMAC secrets. The authenticated user ID (`auth.uid()`) is passed into repository transactions to enforce multi-tenant isolation.
 
 ---
 
-## 5. Machine Learning Pipeline & Evaluation Metrics
+## 7. Machine Learning Pipeline & Evaluation Metrics
 
-The machine learning core uses an immutable, cryptographically verified Scikit-learn candidate pipeline (`validated_candidate_pipeline.joblib`).
+The core machine learning engine uses an immutable, cryptographically verified Scikit-learn candidate pipeline (`validated_candidate_pipeline.joblib`).
 
 ```
 Raw Readings Time-Series (1,034 dates)
@@ -192,12 +222,12 @@ RandomForestClassifier (250 Trees, class_weight='balanced')
 Uncalibrated Vote Fraction (model_score: 0.0 to 1.0)
 ```
 
-### Verified Model Architecture & Integrity
-- **Pipeline Type:** `scikit-learn.pipeline.Pipeline`
+### Model Integrity & Architecture
+- **Pipeline Type:** `sklearn.pipeline.Pipeline`
 - **Imputer:** `SimpleImputer(strategy='median', add_indicator=True)`
 - **Classifier:** `RandomForestClassifier(n_estimators=250, class_weight='balanced', random_state=42)`
 - **Model Inputs:** 13 engineered features expanded to 21 inputs with missing-value indicators.
-- **Expected SHA-256 Hash:**
+- **Cryptographic SHA-256 Hash:**
   ```
   442981aa7f24885d89363bfd6bc9123c2d05dbc13c59e58644d82e6773a5a2a5
   ```
@@ -222,7 +252,7 @@ Uncalibrated Vote Fraction (model_score: 0.0 to 1.0)
 
 ### Quantitative Evaluation on Held-Out Test Split (8,475 Rows)
 
-The candidate pipeline was evaluated on a held-out test split of 8,475 customer records with verified ground truth:
+The candidate pipeline was evaluated on a held-out test split of 8,475 customer records with verified ground truth from the State Grid Corporation of China (SGCC) benchmark dataset:
 
 | Metric | Measured Result | Interpretation / Operational Meaning |
 | :--- | :---: | :--- |
@@ -242,7 +272,7 @@ The candidate pipeline was evaluated on a held-out test split of 8,475 customer 
 | **Actual Flagged (1)** | **459** (False Negatives) | **264** (True Positives) | 723 |
 | **Total Predicted** | 7,572 | 903 | **8,475** |
 
-### Cross-Validation Model Comparison
+### Benchmark Architecture Comparison
 
 During model development, four candidate architectures were benchmarked under identical cross-validation conditions:
 
@@ -255,58 +285,104 @@ During model development, four candidate architectures were benchmarked under id
 
 ---
 
-## 6. Dataset Description & Attribution
+## 8. Electricity-Bill OCR & Comparison Workflows
 
-The model was developed using the benchmark electricity consumption dataset originally released by the State Grid Corporation of China (SGCC), widely adopted in academic research for non-technical loss detection.
+### Supported File Formats & Technical Specifications
+The Spot-Bill Upload module (`/app/bill-upload`) accepts:
+- **Raster Images:** `.jpg`, `.jpeg`, `.png`
+- **PDF Documents:** `.pdf` (up to 10 MB maximum file size)
 
-### Dataset Profile
-- **Total Customer Records:** 42,372 accounts
-- **Time-Series Monitoring Window:** 1,034 consecutive daily consumption readings (~2.8 years)
-- **Total Data Cells:** 43,897,392 readings
-- **Missing Reading Rate:** 25.59% (11,233,528 missing readings) reflecting real-world AMI communication drops
-- **Zero-Consumption Days:** 5,788,603 readings
-- **Class Distribution:**
-  - `FLAG = 0` (Normal Consumption): 38,757 customers (**91.47%**)
-  - `FLAG = 1` (Anomalous / Flagged): 3,615 customers (**8.53%**)
-- **Customer Feature Compression:** To enable real-time web screening without uploading multi-megabyte raw time-series matrices, the 1,034 daily columns were compressed into the 13 statistical summary features described above.
+> [!NOTE]
+> **PDF OCR Support Notice & Manual Verification:**
+> Automated in-browser OCR is performed via Tesseract.js directly on raster images (`.jpg`, `.jpeg`, `.png`).
+> For PDF statements, automated browser OCR is currently not supported. When a PDF file is loaded, the application provides an in-browser document preview (and a direct link to view the PDF in a new tab), displays a clear informational notice, and enables the operator to inspect and edit or verify the extracted bill fields manually.
 
----
+### Arithmetic Consistency Verification
+The OCR parser automatically validates the mathematical consistency of printed meter readings against billed units:
+$$\Delta = \text{Current Reading} - \text{Previous Reading}$$
 
-## 7. Application UI Tour & Workflow
+If $|\Delta - \text{Units Billed}| > 1.0\text{ kWh}$, the system flags a **Reading Discrepancy** warning. This immediately alerts operators to check whether a meter multiplier (MF), billing adjustment, or spot-billing typographical punch error is present, preserving the printed billed units while preventing false theft accusations.
 
-The TheftGuard AI authenticated interface is organized into a clean, purpose-driven navigation workflow:
-
-```
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ [Logo] TheftGuard AI      [Language: EN/HI/TE/TA]             [Signed in as: Operator] │
-├─────────────────┬──────────────────────────────────────────────────────────────────────┤
-│  Navigation     │  Workspace Content                                                   │
-│  ├ Dashboard    │  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐    │
-│  ├ Screening    │  │ High Risk (≥0.50)│  │ Elevated (0.3-0.5│  │ Normal (<0.30)   │    │
-│  ├ Results      │  │     264 Accounts │  │     639 Accounts │  │   7,113 Accounts │    │
-│  ├ Bill Upload  │  └──────────────────┘  └──────────────────┘  └──────────────────┘    │
-│  ├ Bill Compare │                                                                      │
-│  ├ Tickets      │  Recent Screening Batches & Investigation Tickets                    │
-│  ├ Reports      │  ┌────────────────────────────────────────────────────────────────┐  │
-│  ├ AI Chat      │  │ INV-20261025-0104 | Meter Bypass | Status: In inspection       │  │
-│  └ Model Info   │  └────────────────────────────────────────────────────────────────┘  │
-└─────────────────┴──────────────────────────────────────────────────────────────────────┘
-```
-
-1. **Dashboard Overview (`/app/dashboard`):** High-level operational command center showing total screened accounts, risk distribution bar charts, active investigation tickets, and immediate quick-action cards.
-2. **ML Screening (`/app/screening`):** Drag-and-drop CSV batch upload. Pre-validates feature boundaries in the browser and streams chunks to `/v1/predict-batch` with real-time progress visualization.
-3. **Customer Results (`/app/results`):** Interactive results table sortable by Model Score. Clicking any customer opens a sliding detail drawer showing all 13 feature values, visual risk gauges, and a 1-click **Create Investigation Ticket** button.
-4. **Spot-Bill OCR Upload (`/app/bill-upload`):** Scans spot-billing paper slips. Automatically parses Consumer Number, Previous Reading, Current Reading, Units Billed, and Multiplier.
-5. **Dual-Bill Comparison (`/app/bill-comparison`):** Compares consecutive utility bills side by side with calendar-normalized daily burn rates and an appliance load itemizer.
-6. **Field Investigations (`/app/investigations`):** Manages formal audit tickets (`INV-YYYYMMDD-XXXX`), assigning field teams and tracking completion of the mandatory 5-point physical verification checklist.
-7. **Reports & Export (`/app/reports`):** Generates executive compliance audit summaries with instant CSV export and formatted print-ready PDF generation.
-8. **Model Information (`/app/model`):** Transparently exposes model metadata, the SHA-256 integrity hash, training boundaries, confusion matrices, and scientific disclaimer notes.
+### Dual-Bill Comparison Engine
+The Bill Comparison module (`/app/bill-comparison`) allows side-by-side analysis of two consecutive billing cycles:
+- **Calendar-Normalized Burn Rate:** Normalizes consumption by billing period length ($\text{kWh/day}$) to eliminate calendar-length distortions.
+- **Cost Shifts:** Calculates net change in bill amount (₹) and effective tariff rate per unit ($\text{₹/kWh}$).
+- **Appliance Load Modeling:** A 4-step questionnaire benchmarks reported usage against expected seasonal consumption for major electrical loads (air conditioners, water heaters/geysers, agricultural/domestic water pumps, refrigerators) calibrated to Bureau of Energy Efficiency (BEE) 3-Star appliance standards.
 
 ---
 
-## 8. AI Assistant Plugins & Grounded Tools
+## 9. Investigation Ticket Lifecycle & Duplicate Prevention
 
-TheftGuard AI incorporates an interactive domain-grounded assistant available through both a dedicated full-screen workspace (`/app/chat`) and a persistent slide-over drawer accessible via the floating lightning bolt (`⚡`) button.
+### Formal Investigation Tickets (`INV-YYYYMMDD-XXXX`)
+Field audits are organized into formal investigation tickets generated with a standardized code format (`INV-YYYYMMDD-XXXX`).
+
+#### Status Progression Lifecycle
+```
+[New] ──> [Scheduled] ──> [In inspection] ──> [Evidence review] ──> [Closed]
+```
+- **New:** Ticket registered from anomaly screening or bill comparison escalation.
+- **Scheduled:** Assigned to an inspection team with a target site visit date.
+- **In inspection:** Field team actively executing on-site physical audit.
+- **Evidence review:** Checklist completed; supervisor reviewing findings and photographs.
+- **Closed:** Audit resolved with determination (Confirmed Tampering, Defective Meter, Billing Correction, or Compliant).
+
+#### 5-Point Field Inspection Checklist
+The investigation module provides a standardized 5-point on-site inspection checklist:
+1. **Customer & Meter Identity:** Confirm physical meter serial number and consumer identification against billing master data.
+2. **Reading Comparison:** Verify physical LCD register reading against the previous and current spot-billing records.
+3. **Seal & Enclosure Integrity:** Inspect utility meter seals, optical port locks, and enclosure tamper indicators.
+4. **Connected Load Audit:** Measure active connected household load and compare against sanctioned contract demand (kW).
+5. **Photographs & Field Notes:** Record on-site evidence photographs, terminal block wiring observations, and field notes.
+
+> [!NOTE]
+> **Workflow vs. Inspection Guidance:**
+> Status progression (`New` $\rightarrow$ `Scheduled` $\rightarrow$ `In inspection` $\rightarrow$ `Evidence review` $\rightarrow$ `Closed`), duplicate prevention, and outcome recording are core workflow controls. The 5-point checklist serves as interactive procedural guidance to assist and structure field audits; items can be completed progressively as evidence is gathered and do not act as rigid programmatic validation gates.
+
+### Duplicate Prevention & Deep-Linking UX
+To prevent queue clutter and redundant field visits:
+- **Database & State Uniqueness:** The system prevents creating multiple open investigation tickets for the same consumer ID.
+- **Friendly Escalation Feedback:** When an operator attempts to escalate a customer who already has an investigation record (e.g., from the Bill Comparison page), the system suppresses duplicate creation and displays a friendly informational notice: *“An investigation already exists for this customer (INV-YYYYMMDD-XXXX).”*
+- **Seamless Deep Linking:** The notice provides a **"View Existing Investigation"** button that routes directly to `/app/investigations?id=...&ticket=...`. The Investigations page automatically switches the active filter to "All", expands the corresponding ticket accordion, scrolls smoothly to it, and highlights it with a temporary gold accent ring.
+
+---
+
+## 10. Authentication, Supabase Persistence & User Data Isolation
+
+TheftGuard AI implements a robust multi-tenant security architecture combining Supabase Authentication with PostgreSQL Row Level Security (RLS).
+
+```
+┌───────────────────────────────────────────┐
+│             screening_batches             │
+│  - id: UUID (PK)                          │
+│  - file_name: VARCHAR(255)                │
+│  - total_rows: INTEGER                    │
+│  - model_sha256: VARCHAR(64)              │
+│  - created_by: UUID (FK auth.users)       │
+└─────────────────────┬─────────────────────┘
+                      │ 1:N
+                      ▼
+┌───────────────────────────────────────────┐       ┌───────────────────────────────────────────┐
+│             screening_records             │       │               investigations              │
+│  - id: UUID (PK)                          │       │  - id: UUID (PK)                          │
+│  - batch_id: UUID (FK)                    │ 1:1   │  - ticket_code: VARCHAR(64) (UNIQUE)      │
+│  - customer_ref: VARCHAR(128)             ├───────►  - screening_record_id: UUID (FK)         │
+│  - model_score: DOUBLE PRECISION          │       │  - status: VARCHAR(32)                    │
+│  - predicted_label: SMALLINT              │       │  - checklist: JSONB                       │
+│  - review_category: VARCHAR(32)           │       │  - created_by: UUID (FK auth.users)       │
+└───────────────────────────────────────────┘       └───────────────────────────────────────────┘
+```
+
+### Multi-Tenant Data Isolation & Security Architecture
+1. **PostgreSQL RLS & PostgREST Lockdown:** All four audit tables (`screening_batches`, `screening_records`, `investigations`, `bill_extractions`) have Row Level Security enabled in PostgreSQL with default-deny semantics. Migration `001_phase2_initial_schema.sql` explicitly revokes public PostgREST API access from `anon` and standard `authenticated` roles (`REVOKE ALL ON TABLE ... FROM anon, authenticated`), blocking unauthorized direct browser-to-table access.
+2. **Server-Side Stateless JWT Verification:** All persistent audit operations are brokered by the FastAPI backend service (`/ml/*`). The service inspects incoming Bearer tokens using PyJWT, validating signatures against Supabase JWKS endpoints (supporting ES256, RS256, and HS256 algorithms), audience (`authenticated`), expiration, and issuer.
+3. **User-Scoped Repository Boundaries:** The verified user UUID (`auth.uid()`) is passed into SQLAlchemy repository transactions. All database queries and mutations enforce user ownership (`WHERE created_by == user_id`), ensuring that users can only view, update, or delete their own screening batches and investigation records.
+4. **Client-Side Preference Partitioning:** Local browser storage (`localStorage`) partitions keys by account ID (`theftguard:onboarding:<userId>` and `theftguard:onboarding:demo`) for UI preferences and onboarding tour progression. Client-side storage is strictly a display aid and is explicitly not an authorization boundary; all access control and record tenancy are enforced server-side.
+
+---
+
+## 11. AI Assistant Plugins & Grounded Tools
+
+TheftGuard AI incorporates an interactive domain assistant available via a dedicated workspace (`/app/chat`) and a global floating slide-over drawer (`⚡`).
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────┐
@@ -316,11 +392,11 @@ TheftGuard AI incorporates an interactive domain-grounded assistant available th
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### The 8 Grounded Plugins
+### The 8 Grounded Domain Plugins
 
 | # | Plugin Name | ID | Badge | Real Grounded Data Operation |
 |---|---|---|---|---|
-| 1 | **General Assistant** | `general_assistant` | `All-in-One` | Default assistant. Explains concepts (kWh, sanctioned load, power factor, power vs energy), guides application navigation, and synthesizes cross-domain data. |
+| 1 | **General Assistant** | `general_assistant` | `All-in-One` | Default assistant. Explains utility concepts (kWh, sanctioned load, power factor, power vs energy), guides application navigation, and synthesizes cross-domain data. |
 | 2 | **Bill Comparison** | `bill_comparison` | `Dual-Bill` | Computes verified energy shifts (kWh), daily burn rates (`kWh/day`), billing amount delta (₹), and unit cost shifts (`₹/kWh`). |
 | 3 | **Bill Upload & OCR** | `bill_upload_ocr` | `OCR Audit` | Audits spot-billing slips, confirms arithmetic consistency, and checks for meter punch errors before field deployment. |
 | 4 | **Theft Screening** | `theft_screening` | `ML Screening` | Evaluates consumption anomaly batches, score distributions, and groups accounts into Review, Elevated, and Normal triage bands. |
@@ -329,48 +405,15 @@ TheftGuard AI incorporates an interactive domain-grounded assistant available th
 | 7 | **Bill Calculator** | `bill_calculator` | `Tariff Slabs` | Simulates telescopic tariff slabs, fixed demand charges, electricity duty, and fuel surcharges under clearly stated assumptions. |
 | 8 | **Electricity Help** | `electricity_help` | `Knowledge` | Step-by-step engineering protocols for the **Switch-Off Creep Test** (diagnosing phantom meter pulsing with main MCB OFF) and disputing billing punch errors. |
 
----
-
-## 9. Database Schema & Row Level Security
-
-The persistent audit backend uses PostgreSQL (hosted on Supabase) configured with Row Level Security (RLS) on all tables.
-
-```
-┌───────────────────────────────────────────┐
-│             screening_batches             │
-│  - id: UUID (PK)                          │
-│  - file_name: VARCHAR(255)                │
-│  - record_count: INTEGER                  │
-│  - model_sha256: VARCHAR(64)              │
-│  - created_by: UUID (FK auth.users)       │
-└─────────────────────┬─────────────────────┘
-                      │ 1:N
-                      ▼
-┌───────────────────────────────────────────┐       ┌───────────────────────────────────────────┐
-│             screening_records             │       │               investigations              │
-│  - id: UUID (PK)                          │       │  - id: UUID (PK)                          │
-│  - batch_id: UUID (FK)                    │ 1:1   │  - ticket_code: VARCHAR(32) (UNIQUE)      │
-│  - customer_id: VARCHAR(64)               ├───────►  - screening_record_id: UUID (FK)         │
-│  - model_score: DOUBLE PRECISION          │       │  - status: VARCHAR(32)                    │
-│  - predicted_label: INTEGER               │       │  - checklist_state: JSONB                 │
-│  - risk_band: VARCHAR(32)                 │       │  - created_by: UUID (FK auth.users)       │
-└───────────────────────────────────────────┘       └───────────────────────────────────────────┘
-```
-
-### Table Specifications
-1. `screening_batches`: Records metadata for each uploaded CSV batch, including row count, model SHA-256 hash, and uploading user ID.
-2. `screening_records`: Holds individual screened consumer rows with their 13 feature values, model score, predicted label, and triage band.
-3. `investigations`: Manages audit tickets (`INV-YYYYMMDD-XXXX`), status lifecycle, notes, and the 5-point physical verification checklist state.
-4. `bill_extractions`: Stores verified numerical meter readings and discrepancy flags extracted via spot-bill OCR.
-5. `schema_migrations`: Immutable ledger tracking applied migration scripts (`001_phase2_initial_schema.sql`, `002_add_created_by_to_bill_extractions.sql`).
+**Grounded Execution Guarantee:** When prerequisite data is absent (e.g., asking for a bill comparison when no bills have been loaded), plugins report the exact missing inputs and provide direct navigation buttons rather than fabricating hypothetical numbers.
 
 ---
 
-## 10. Local Installation & Setup Guide
+## 12. Local Setup & Installation Instructions
 
 ### Prerequisites
-- **Python:** Version 3.10 to 3.13 (tested on 3.13)
-- **Node.js:** Version 18 or newer (tested on Node 20 and 24; npm 10+)
+- **Python:** Version 3.10 to 3.13 (tested and verified on Python 3.13)
+- **Node.js:** Version 18 or newer (tested and verified on Node 20 and Node 24; npm 10+)
 - **Git:** Standard version control
 - **Database:** Supabase PostgreSQL instance (or local PostgreSQL 15+)
 
@@ -386,9 +429,9 @@ cd TheftGuard-AI
 
 ### Step 2: Restore the ML Model Binary
 Because machine learning binary files (`.joblib`) are excluded from Git version control, ensure the verified pipeline binary is placed in `ml-service/`:
-- **Destination:** `ml-service/validated_candidate_pipeline.joblib`
+- **Destination Path:** `ml-service/validated_candidate_pipeline.joblib`
 
-Verify the file's SHA-256 hash:
+Verify the file's SHA-256 cryptographic hash:
 ```powershell
 # Windows PowerShell:
 (Get-FileHash -Path "ml-service\validated_candidate_pipeline.joblib" -Algorithm SHA256).Hash.ToLower()
@@ -401,9 +444,9 @@ sha256sum ml-service/validated_candidate_pipeline.joblib
 ---
 
 ### Step 3: Apply Database Schema Migrations
-Execute the SQL migration scripts in order against your Supabase or local PostgreSQL database using the Supabase SQL Editor or `psql`:
-1. `ml-service/migrations/sql/001_phase2_initial_schema.sql`
-2. `ml-service/migrations/sql/002_add_created_by_to_bill_extractions.sql`
+Execute the SQL migration scripts in order against your Supabase or PostgreSQL database:
+1. [`ml-service/migrations/sql/001_phase2_initial_schema.sql`](ml-service/migrations/sql/001_phase2_initial_schema.sql)
+2. [`ml-service/migrations/sql/002_add_created_by_to_bill_extractions.sql`](ml-service/migrations/sql/002_add_created_by_to_bill_extractions.sql)
 
 ---
 
@@ -434,7 +477,7 @@ npm install
 
 ---
 
-## 11. Environment Variables Configuration
+## 13. Environment Variable Configuration
 
 ### Backend Configuration (`ml-service/.env`)
 Copy `ml-service/.env.example` to `ml-service/.env`:
@@ -452,8 +495,10 @@ THEFTGUARD_DATABASE_URL=postgresql+psycopg://postgres.[PROJECT-REF]:[DB-PASSWORD
 # Supabase Auth token validation settings
 SUPABASE_URL=https://[PROJECT-REF].supabase.co
 SUPABASE_JWT_ALGORITHMS=ES256,RS256,HS256
+
 # Optional static public key PEM or HMAC secret:
-# SUPABASE_JWT_SECRET=your-jwt-secret
+# SUPABASE_JWT_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----"
+# SUPABASE_JWT_SECRET=
 ```
 
 ### Frontend Configuration (`theftguard-ai-frontend/frontend/.env.local`)
@@ -461,16 +506,16 @@ Copy `theftguard-ai-frontend/frontend/.env.example` to `theftguard-ai-frontend/f
 
 ```ini
 # Supabase Client Configuration
-VITE_SUPABASE_URL=https://your-project-id.supabase.co
+VITE_SUPABASE_URL=https://[PROJECT-REF].supabase.co
 VITE_SUPABASE_ANON_KEY=your-supabase-anon-public-key
 ```
 
 > [!CAUTION]
-> Never commit `.env` or `.env.local` files to version control. Both are excluded in `.gitignore`. Never place service-role keys or database passwords in frontend configuration.
+> Never commit `.env` or `.env.local` files to version control. Both are excluded via `.gitignore`. Never place service-role keys or database passwords in frontend configuration.
 
 ---
 
-## 12. Running the Application
+## 14. Running the Application Locally
 
 To run the complete application locally, open two terminal windows:
 
@@ -495,100 +540,95 @@ npm run dev
 
 ---
 
-## 13. Verification & Automated Test Suite
+## 15. Testing Instructions & Verification
 
-TheftGuard AI maintains a comprehensive **533-test automated test suite** (531 passed, 2 skipped) covering backend APIs, frontend unit logic, and full-browser end-to-end user flows.
-
+### 1. Run Frontend Unit Tests
+Executes unit tests covering mutations, assistant engine, OCR validators, language dictionaries, and state stores:
+```powershell
+cd theftguard-ai-frontend/frontend
+npm test
 ```
-┌────────────────────────────────────────────────────────────────────────┐
-│             Total Automated Tests: 533 (531 Passed, 2 Skipped)         │
-├─────────────────────────┬──────────────────────┬───────────────────────┤
-│ 160 Backend Unit Tests  │ 296 Frontend Unit    │ 77 Playwright E2E     │
-│ (158 Passed, 2 Skipped) │ (296 Passed, 0 Fail) │ (77 Passed, 0 Fail)   │
-└─────────────────────────┴──────────────────────┴───────────────────────┘
+*Expected Result: `tests 325, pass 325, fail 0` in ~0.5s.*
+
+### 2. Run Playwright Browser End-to-End Tests
+Executes full-browser UI tests covering authentication, onboarding tour, collapsible sidebar, mobile navigation, and chat workspace across desktop and mobile viewports:
+```powershell
+cd theftguard-ai-frontend/frontend
+npm run test:e2e
 ```
+*Expected Result: `80 passed` across all spec suites.*
 
-- **533 total tests** defined across the project
-- **158 backend unit tests passed**
-- **2 optional backend tests skipped** (requires `THEFTGUARD_FEATURES_CSV`)
-- **296 frontend unit tests passed** (100% pass rate)
-- **77 Playwright E2E tests passed** (100% pass rate across desktop, tablet, and mobile)
-
-### 1. Run Backend Unit Tests (160 Tests: 158 Passed, 2 Skipped)
+### 3. Run Backend Unit & Integration Tests
+Executes backend tests covering ASGI lifecycle, JWT authentication, Pydantic input bounds, persistence routes, and scoring:
 ```powershell
 cd ml-service
 .\.venv\Scripts\Activate.ps1
 python -m unittest discover -s tests/unit
 ```
-*Result: `Ran 160 tests ... OK (skipped=2)` (158 passed; 2 optional full-dataset conformance tests skip cleanly when `THEFTGUARD_FEATURES_CSV` is unset).*
-
-### 2. Run Frontend Unit Tests (296 Tests)
-```powershell
-cd theftguard-ai-frontend/frontend
-npm test
-```
-*Result: `tests 296, pass 296, fail 0` in ~0.5s.*
-
-### 3. Run Playwright End-to-End Tests (77 Tests)
-```powershell
-cd theftguard-ai-frontend/frontend
-npm run test:e2e
-```
-*Result: `77 passed` across desktop, tablet, and mobile Chromium viewports.*
+*Expected Result: `Ran 160 tests ... OK (skipped=2)` (158 passed; 2 optional full-dataset tests skip cleanly when `THEFTGUARD_FEATURES_CSV` is unset).*
 
 ### 4. Verify Production Build Compilation
 ```powershell
 cd theftguard-ai-frontend/frontend
 npm run build
 ```
-*Result: Compiles cleanly with zero JSX/CSS syntax errors.*
+*Expected Result: Compiles cleanly into `dist/` with zero JSX/CSS syntax errors.*
 
 ---
 
-## 14. Deployment Architecture
+## 16. Current Verified Test Counts
+
+TheftGuard AI maintains an active, multi-layered automated test suite. All tests have been independently executed and verified:
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│             Total Automated Tests: 565 (563 Passed, 2 Skipped)         │
+├─────────────────────────┬──────────────────────┬───────────────────────┤
+│ 160 Backend Unit Tests  │ 325 Frontend Unit    │ 80 Playwright E2E     │
+│ (158 Passed, 2 Skipped) │ (325 Passed, 0 Fail) │ (80 Passed, 0 Fail)   │
+└─────────────────────────┴──────────────────────┴───────────────────────┘
+```
+
+| Test Category | Framework | Test Count | Passed | Skipped | Failed | Last Verification Date |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: |
+| **Frontend Unit Tests** | Node.js Test Runner (`node --test`) | 325 | 325 | 0 | 0 | October 26, 2026 |
+| **Browser End-to-End** | Playwright (`playwright test`) | 80 | 80 | 0 | 0 | October 26, 2026 |
+| **Backend Unit & API** | Python `unittest` | 160 | 158 | 2* | 0 | October 26, 2026 |
+| **Total Automated Tests**| **Full Suite** | **565** | **563** | **2** | **0** | **October 26, 2026** |
+
+*\*Note: 2 backend tests evaluate optional offline full-dataset conformance and skip gracefully when `THEFTGUARD_FEATURES_CSV` is unconfigured.*
+
+---
+
+## 17. Deployment Links & Production Architecture
 
 The application is deployed across production cloud services:
 
-1. **Frontend (Vercel):** Hosted at [https://theft-guard-ai-z9tb.vercel.app](https://theft-guard-ai-z9tb.vercel.app). Managed via `vercel.json` rewrites that route `/ml/:path*` to the backend and all other routes to `/index.html`.
+1. **Frontend (Vercel):** Hosted at [https://theft-guard-ai-z9tb.vercel.app](https://theft-guard-ai-z9tb.vercel.app). Managed via [`vercel.json`](theftguard-ai-frontend/frontend/vercel.json) rewrites that route `/ml/:path*` to the backend and all client-side routes to `/index.html`.
 2. **Backend (Render):** Hosted on Render (`https://theftguard-ai.onrender.com`) running the FastAPI application via Uvicorn.
 3. **Database & Auth (Supabase):** PostgreSQL 15 database with Supabase Auth providing JWT generation, user management, and Row Level Security enforcement.
 
 ---
 
-## 15. Responsible AI Principles & Ethical Use
+## 18. Known Limitations & Responsible-Use Disclaimer
 
 > [!IMPORTANT]
 > **Decision Support Notice:**
 > A high model score ($\ge 0.50$) indicates statistical similarity to consumption anomalies present in the training dataset. **It is an operational triage signal, not legal proof of electricity theft, meter tampering, or fraud.**
 
-### Ethical Safeguards & Operating Constraints
-- **Human-in-the-Loop Requirement:** Field inspectors must complete the mandatory 5-point physical verification checklist on-site before issuing any notice or penalty.
-- **Benign Explanations for Anomalies:** A sharp drop in electricity consumption frequently results from legitimate non-theft causes, including:
-  - Extended consumer travel or seasonal property vacancy
-  - Installation of rooftop solar net-metering systems
-  - Commercial facility temporary maintenance shutdowns
-  - Defective meter wiring or faulty current transformers (CTs)
+### Operating Constraints & Ethical Safeguards
+- **Mandatory Human-in-the-Loop Audit:** Machine learning predictions must never be used to issue penalties, disconnect service, or accuse consumers without an on-site physical inspection completing the 5-point checklist.
+- **Benign Explanations for Anomalies:** A sharp drop in consumption often stems from legitimate, non-fraudulent causes:
+  - Extended consumer travel or seasonal property vacancy.
+  - Installation of rooftop solar photovoltaic (PV) net-metering systems.
+  - Temporary commercial maintenance or seasonal business shutdowns.
+  - Defective meter wiring or faulty current transformers (CTs).
 - **Uncalibrated Model Scores:** The primary model output is termed **Model Score** ($0.0$ to $1.0$). It represents the Random Forest vote fraction for class 1 and must not be communicated to consumers as a calibrated probability of theft.
 - **Privacy & Data Minimization:** Spot-billing OCR processes receipts purely within browser memory. Camera images, PDF files, and raw OCR text dumps are never uploaded or retained in database tables.
 
 ---
 
-## 16. Current Limitations & Future Enhancements
-
-### Current System Limitations
-1. **Whole-Period Summary Features:** The model evaluates aggregate statistical metrics across a monitoring period rather than sequential time-series change detection.
-2. **Imbalanced Test Precision:** Precision on the held-out test split is 29.24%, reflecting real-world utility class imbalance ($91.5\% / 8.5\%$). Approximately 2 out of 3 flagged accounts in the top band are false positives that must be filtered through desk review.
-3. **Paper Slip OCR Variability:** Browser-based OCR depends on lighting, paper crease conditions, and camera focus. Faded thermal receipts require manual verification via the editable input fields.
-
-### Planned Enhancements
-- [ ] **Automated Metering Infrastructure (AMI) Streaming:** Real-time ingestion of hourly smart-meter telemetry via Apache Kafka / MQTT.
-- [ ] **Solar Disentanglement Module:** Net-metering solar generation profile subtraction to reduce false-positive rates on green prosumers.
-- [ ] **Calibrated Probability Outputs:** Isotonic regression or Platt scaling calibration on recent geographic validation splits.
-- [ ] **Mobile Field PWA:** Progressive Web App with offline caching and GPS-stamped photo capture for field inspection crews.
-
----
-
-## 17. Repository Structure
+## 19. Project Structure & Development Notes
 
 ```
 TheftGuard-AI/
@@ -636,13 +676,17 @@ TheftGuard-AI/
         │   ├── pages/                        # Dashboard, Screening, Results, Investigations,
         │   │                                 # BillUpload, BillComparison, Reports, Chat, Model
         │   └── state/                        # Global state management & offline fallback
-        ├── test/                             # 296 frontend unit tests
-        └── e2e/                              # 77 Playwright browser end-to-end tests
+        ├── test/                             # 325 frontend unit tests
+        └── e2e/                              # 80 Playwright browser end-to-end tests
 ```
+
+### Development Notes
+- **Code Style & Linting:** Frontend adheres to standard React 18 modular structure; backend follows PEP 8 conventions with explicit type annotations.
+- **Git Hygiene:** Never use `git add .` or commit untracked test fixtures or binary presentation decks. Stage only explicit source files.
 
 ---
 
-## 18. License & Attribution
+## 20. License & Citation
 
 This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for complete details.
 
@@ -652,7 +696,7 @@ If you reference or use this project in an academic paper, capstone demonstratio
 ```bibtex
 @misc{theftguard_ai_2026,
   author = {Balraj Pranay Kumar},
-  title = {TheftGuard AI: Machine Learning Decision Support & Field Audit Platform for Electricity Distribution Utilities},
+  title = {TheftGuard AI: Electricity Theft Detection & Field Audit Platform for Power Distribution Utilities},
   year = {2026},
   publisher = {GitHub},
   journal = {GitHub repository},
