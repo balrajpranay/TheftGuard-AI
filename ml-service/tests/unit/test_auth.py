@@ -128,7 +128,7 @@ def dispatch_asgi(
         if not sent:
             sent = True
             return {"type": "http.request", "body": b"", "more_body": False}
-        return {"type": "http.request", "body": b"", "more_body": False}
+        return {"type": "http.disconnect"}
 
     resp = {"status": 500, "headers": {}}
     chunks = []

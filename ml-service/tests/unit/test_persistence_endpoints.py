@@ -109,7 +109,7 @@ def request_endpoint(
         if not sent:
             sent = True
             return {"type": "http.request", "body": raw_body, "more_body": False}
-        return {"type": "http.request", "body": b"", "more_body": False}
+        return {"type": "http.disconnect"}
 
     resp = {}
     chunks = []
