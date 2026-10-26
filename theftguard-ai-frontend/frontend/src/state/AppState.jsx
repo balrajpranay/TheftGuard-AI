@@ -19,6 +19,7 @@ import {
   rollbackChecklistToggle,
   restoreDeletedInvestigation,
   isUuidTicket,
+  findExistingInvestigation,
 } from '../lib/investigationMutations.js'
 
 const DEMO_CUSTOMERS = buildDemoCustomers()
@@ -253,14 +254,18 @@ export function AppStateProvider({ children }) {
   const addInvestigation = useCallback(
     async ({ customerRef, origin, basis, screeningRecordId, batchId, priority = 'Normal', assignee = '', notes = '' }) => {
       // Check local list first for fast feedback
-      const existing = investigations.find(
-        (i) => i.customerRef === customerRef && (screeningRecordId ? i.screeningRecordId === screeningRecordId : i.origin === origin),
-      )
+      const existing =
+        findExistingInvestigation(investigations, { customerRef, origin, screeningRecordId }) ||
+        investigations.find(
+          (i) => i.customerRef === customerRef && (screeningRecordId ? i.screeningRecordId === screeningRecordId : i.origin === origin),
+        )
       if (existing) {
         return {
           ok: false,
           conflict: true,
           ticketCode: existing.ticketCode,
+          investigationId: existing.id,
+          investigation: existing,
           message: `Customer ${customerRef} is already in the investigation queue (${existing.ticketCode}).`,
         }
       }
@@ -313,9 +318,16 @@ export function AppStateProvider({ children }) {
         return { ok: true, investigation: normalized, ticketCode: normalized.ticketCode }
       } catch (err) {
         if (err instanceof DbApiError && err.code === 'conflict') {
+          const match =
+            findExistingInvestigation(investigations, { customerRef, origin, screeningRecordId }) ||
+            investigations.find((i) => i.customerRef === customerRef)
+
           return {
             ok: false,
             conflict: true,
+            ticketCode: match?.ticketCode || null,
+            investigationId: match?.id || null,
+            investigation: match || null,
             message: err.message || 'Conflict: an active investigation already exists.',
           }
         }

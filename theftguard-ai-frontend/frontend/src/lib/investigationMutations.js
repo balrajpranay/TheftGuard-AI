@@ -109,3 +109,69 @@ export function restoreDeletedInvestigation(list, target, originalIndex = 0) {
   restored.splice(idx, 0, target)
   return restored
 }
+
+/**
+ * Resolves an existing investigation from a list based on customerRef, origin, or screeningRecordId.
+ * Used for client-side duplicate detection and fast conflict resolution.
+ */
+export function findExistingInvestigation(list, { customerRef, origin, screeningRecordId } = {}) {
+  if (!Array.isArray(list) || !customerRef) return null
+  const cleanRef = String(customerRef).trim().toLowerCase()
+  return (
+    list.find((i) => {
+      const matchRef = String(i.customerRef || '').trim().toLowerCase() === cleanRef
+      if (!matchRef) return false
+      if (screeningRecordId) {
+        return i.screeningRecordId === screeningRecordId
+      }
+      return i.origin === origin || (!screeningRecordId && !i.screeningRecordId)
+    }) || null
+  )
+}
+
+/**
+ * Finds an investigation by ID (UUID/local ID), ticket code, or customer reference.
+ * Supports deep linking and URL search parameters navigation.
+ */
+export function findInvestigationMatch(list, { id, ticketCode, customerRef } = {}) {
+  if (!Array.isArray(list)) return null
+  const cleanId = id != null && String(id).trim() ? String(id).trim() : null
+  const cleanTicket =
+    ticketCode != null && String(ticketCode).trim() ? String(ticketCode).trim().toLowerCase() : null
+  const cleanCust =
+    customerRef != null && String(customerRef).trim() ? String(customerRef).trim().toLowerCase() : null
+
+  if (!cleanId && !cleanTicket && !cleanCust) return null
+
+  return (
+    list.find((i) => {
+      if (cleanId && (i.id === cleanId || String(i.id) === cleanId)) return true
+      if (
+        cleanTicket &&
+        (i.ticketCode === ticketCode || String(i.ticketCode || '').toLowerCase() === cleanTicket)
+      ) {
+        return true
+      }
+      if (
+        cleanCust &&
+        (i.customerRef === customerRef || String(i.customerRef || '').toLowerCase() === cleanCust)
+      ) {
+        return true
+      }
+      return false
+    }) || null
+  )
+}
+
+/**
+ * Constructs a valid navigation path and search query to select an investigation.
+ */
+export function buildInvestigationLink({ id, ticketCode, customerRef } = {}) {
+  const params = new URLSearchParams()
+  if (id) params.set('id', id)
+  if (ticketCode) params.set('ticket', ticketCode)
+  if (customerRef && !id && !ticketCode) params.set('customer', customerRef)
+
+  const queryString = params.toString()
+  return queryString ? `/app/investigations?${queryString}` : '/app/investigations'
+}

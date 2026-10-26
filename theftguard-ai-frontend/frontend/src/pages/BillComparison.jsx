@@ -33,6 +33,7 @@ import {
   calculateApplianceEstimates,
   synthesizeAnalysis,
 } from '../lib/householdQuestionnaire'
+import { buildInvestigationLink } from '../lib/investigationMutations'
 import { useAppState } from '../state/AppState'
 import { useLanguage } from '../context/LanguageContext'
 
@@ -75,6 +76,7 @@ export default function BillComparison() {
   const [confirmUnmatchedConsumer, setConfirmUnmatchedConsumer] = useState(false)
   const [invAdding, setInvAdding] = useState(false)
   const [invTicket, setInvTicket] = useState('')
+  const [invExisting, setInvExisting] = useState(null)
   const [invError, setInvError] = useState('')
   const [invNotice, setInvNotice] = useState('')
 
@@ -102,6 +104,7 @@ export default function BillComparison() {
   useEffect(() => {
     setConfirmUnmatchedConsumer(false)
     setInvTicket('')
+    setInvExisting(null)
     setInvError('')
     setInvNotice('')
   }, [prevSlot.fields.consumerNumber, currSlot.fields.consumerNumber])
@@ -138,6 +141,7 @@ export default function BillComparison() {
 
     setConfirmUnmatchedConsumer(false)
     setInvTicket('')
+    setInvExisting(null)
     setInvError('')
     setInvNotice('')
   }
@@ -153,6 +157,7 @@ export default function BillComparison() {
     })
     setConfirmUnmatchedConsumer(false)
     setInvTicket('')
+    setInvExisting(null)
     setInvError('')
     setInvNotice('')
     setActiveBillContext?.(null)
@@ -175,6 +180,7 @@ export default function BillComparison() {
 
     setConfirmUnmatchedConsumer(false)
     setInvTicket('')
+    setInvExisting(null)
     setInvError('')
     setInvNotice('')
   }
@@ -324,6 +330,7 @@ export default function BillComparison() {
     setInvAdding(true)
     setInvError('')
     setInvNotice('')
+    setInvExisting(null)
 
     const ref =
       prevSlot.fields.consumerNumber ||
@@ -343,8 +350,20 @@ export default function BillComparison() {
     setInvAdding(false)
     if (res.ok) {
       setInvTicket(res.ticketCode || '')
+      setInvExisting(null)
       setInvNotice(res.notice || 'Successfully added to investigation queue.')
+    } else if (res.conflict) {
+      setInvTicket('')
+      setInvError('')
+      setInvNotice('')
+      setInvExisting({
+        id: res.investigationId || res.investigation?.id || null,
+        ticketCode: res.ticketCode || res.investigation?.ticketCode || '',
+        customerRef: ref,
+      })
     } else {
+      setInvExisting(null)
+      setInvNotice('')
       setInvError(res.message || 'Could not add to investigation queue.')
     }
   }
@@ -711,11 +730,30 @@ export default function BillComparison() {
                   <div className="flex items-center gap-2">
                     <Badge tone="ok">Ticket {invTicket}</Badge>
                     <Link
-                      to="/app/investigations"
+                      to={buildInvestigationLink({ ticketCode: invTicket })}
                       className="text-xs font-medium text-ink underline underline-offset-2"
                     >
                       View in Investigations
                     </Link>
+                  </div>
+                ) : invExisting ? (
+                  <div className="flex items-center gap-2">
+                    <Badge tone="info">Ticket {invExisting.ticketCode || invExisting.id}</Badge>
+                    <Button
+                      size="sm"
+                      to={buildInvestigationLink({
+                        id: invExisting.id,
+                        ticketCode: invExisting.ticketCode,
+                        customerRef: invExisting.customerRef,
+                      })}
+                      state={{
+                        investigationId: invExisting.id,
+                        ticketCode: invExisting.ticketCode,
+                        customerRef: invExisting.customerRef,
+                      }}
+                    >
+                      View Existing Investigation
+                    </Button>
                   </div>
                 ) : (
                   <Button
@@ -730,6 +768,37 @@ export default function BillComparison() {
                 )}
               </div>
             </div>
+
+            {invExisting ? (
+              <Notice tone="info" className="mt-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-ink">An investigation already exists for this customer.</p>
+                    <p className="text-xs text-muted mt-0.5">
+                      Existing ticket ID:{' '}
+                      <span className="font-mono font-medium text-ink">
+                        {invExisting.ticketCode || invExisting.id}
+                      </span>
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    to={buildInvestigationLink({
+                      id: invExisting.id,
+                      ticketCode: invExisting.ticketCode,
+                      customerRef: invExisting.customerRef,
+                    })}
+                    state={{
+                      investigationId: invExisting.id,
+                      ticketCode: invExisting.ticketCode,
+                      customerRef: invExisting.customerRef,
+                    }}
+                  >
+                    View Existing Investigation
+                  </Button>
+                </div>
+              </Notice>
+            ) : null}
 
             {invError ? (
               <Notice tone="danger" title="Escalation Error" className="mt-3">

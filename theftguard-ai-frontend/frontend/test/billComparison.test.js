@@ -11,6 +11,11 @@ import {
   DEMO_CURRENT_BILL,
 } from '../src/lib/billComparison.js'
 import { inr, kwh, pct } from '../src/lib/format.js'
+import {
+  findExistingInvestigation,
+  findInvestigationMatch,
+  buildInvestigationLink,
+} from '../src/lib/investigationMutations.js'
 
 describe('Household Bill Comparison — Validation & Sanitization', () => {
   it('correctly cleans numbers with commas, spaces, and decimal places', () => {
@@ -488,5 +493,81 @@ describe('Household Bill Comparison — buildAssistantBillContext Reliability', 
     }
     const emptyCtx = buildAssistantBillContext(emptySlots, true)
     assert.equal(emptyCtx, null)
+  })
+
+  describe('Investigation Escalation & Duplicate Prevention UX', () => {
+    const existingInvestigation = {
+      id: 'bd9b8600-1234-5678-90ab-cdef12345678',
+      ticketCode: 'INV-20261025-BD9B86',
+      customerRef: '100458921',
+      origin: 'bill',
+      status: 'In inspection',
+      priority: 'High',
+      assignee: 'Field Supervisor A',
+      notes: 'Customer under review for anomalous drop',
+      checklist: [{ label: 'Verify meter seal', done: true }],
+      outcome: '',
+      screeningRecordId: null,
+      batchId: null,
+    }
+
+    it('formats escalation basis and summary from bill comparison metrics', () => {
+      const comp = calculateBillComparison(DEMO_PREVIOUS_BILL, DEMO_CURRENT_BILL)
+      assert.equal(comp.canCompare, true)
+      assert.ok(comp.metrics)
+
+      const m = comp.metrics
+      const basis = `Household Bill Comparison Review: Consumption shifted by ${m.consumptionDelta >= 0 ? '+' : ''}${m.consumptionDelta} kWh (${m.consumptionPctChange !== null ? m.consumptionPctChange + '%' : 'N/A'}), amount changed by ${inr(m.amountDelta)}.`
+      assert.ok(basis.includes('+25 kWh'))
+      assert.ok(basis.includes('₹245'))
+    })
+
+    it('detects existing duplicate ticket for customer 100458921 without modifying existing ticket', () => {
+      const queue = [existingInvestigation]
+      const beforeSnapshot = JSON.stringify(existingInvestigation)
+
+      const match = findExistingInvestigation(queue, {
+        customerRef: '100458921',
+        origin: 'bill',
+      })
+
+      assert.ok(match)
+      assert.equal(match.ticketCode, 'INV-20261025-BD9B86')
+      assert.equal(match.id, existingInvestigation.id)
+
+      // Ensure ticket is intact and unmodified
+      assert.equal(JSON.stringify(existingInvestigation), beforeSnapshot)
+    })
+
+    it('generates working navigation link to the existing investigation ticket', () => {
+      const link = buildInvestigationLink({
+        id: existingInvestigation.id,
+        ticketCode: existingInvestigation.ticketCode,
+        customerRef: existingInvestigation.customerRef,
+      })
+
+      assert.equal(
+        link,
+        `/app/investigations?id=${existingInvestigation.id}&ticket=${existingInvestigation.ticketCode}`,
+      )
+
+      // Verify that Investigations page matcher resolves the ticket with these parameters
+      const resolved = findInvestigationMatch([existingInvestigation], {
+        id: existingInvestigation.id,
+        ticketCode: existingInvestigation.ticketCode,
+      })
+      assert.ok(resolved)
+      assert.equal(resolved.ticketCode, 'INV-20261025-BD9B86')
+      assert.equal(resolved.customerRef, '100458921')
+    })
+
+    it('allows normal escalation creation when customer is not in queue', () => {
+      const queue = [existingInvestigation]
+      const match = findExistingInvestigation(queue, {
+        customerRef: '100999999',
+        origin: 'bill',
+      })
+      assert.equal(match, null)
+    })
   })
 })

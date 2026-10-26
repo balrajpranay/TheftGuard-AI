@@ -1,7 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useLocation, useSearchParams } from 'react-router-dom'
 import { Badge, Button, EmptyState, Field, inputClass, Notice, PageHeader, Panel } from '../components/ui'
 import { useAppState } from '../state/AppState'
 import { fileSize } from '../lib/format'
+import { findInvestigationMatch } from '../lib/investigationMutations'
 
 const STATUSES = ['New', 'Scheduled', 'In inspection', 'Evidence review', 'Closed']
 const PRIORITIES = ['Low', 'Normal', 'High']
@@ -26,12 +28,37 @@ export default function Investigations() {
   const [filter, setFilter] = useState('All')
   const [openId, setOpenId] = useState(null)
   const [refreshing, setRefreshing] = useState(false)
+  const [searchParams] = useSearchParams()
+  const location = useLocation()
+
+  const targetId = searchParams.get('id') || location.state?.investigationId || location.state?.id || null
+  const targetTicket =
+    searchParams.get('ticket') || searchParams.get('ticketCode') || location.state?.ticketCode || null
+  const targetCustomer =
+    searchParams.get('customer') || searchParams.get('customerRef') || location.state?.customerRef || null
+
+  const targetMatch = useMemo(() => {
+    return findInvestigationMatch(investigations, {
+      id: targetId,
+      ticketCode: targetTicket,
+      customerRef: targetCustomer,
+    })
+  }, [targetId, targetTicket, targetCustomer, investigations])
+
+  useEffect(() => {
+    if (targetMatch) {
+      setOpenId(targetMatch.id)
+      if (filter !== 'All' && targetMatch.status !== filter) {
+        setFilter('All')
+      }
+    }
+  }, [targetMatch, filter])
 
   const list = useMemo(
     () => investigations.filter((i) => filter === 'All' || i.status === filter),
     [investigations, filter],
   )
-  const current = investigations.find((i) => i.id === openId) || list[0] || null
+  const current = (openId ? investigations.find((i) => i.id === openId) : null) || targetMatch || list[0] || null
   const done = current ? current.checklist.filter((c) => c.done).length : 0
 
   function addEvidence(files) {

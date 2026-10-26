@@ -6,6 +6,9 @@ import {
   rollbackOptimisticUpdate,
   rollbackChecklistToggle,
   restoreDeletedInvestigation,
+  findExistingInvestigation,
+  findInvestigationMatch,
+  buildInvestigationLink,
 } from '../src/lib/investigationMutations.js'
 
 describe('Investigation Mutations & Rollback State Management', () => {
@@ -228,6 +231,157 @@ describe('Investigation Mutations & Rollback State Management', () => {
       const list = [sampleTicket1, sampleTicket2]
       const restored = restoreDeletedInvestigation(list, sampleTicket1, 0)
       assert.strictEqual(restored.length, 2)
+    })
+  })
+
+  describe('Duplicate Detection & Investigation Lookup (UX Escalation)', () => {
+    const existingTicket = {
+      id: 'bd9b8600-1111-2222-3333-444455556666',
+      ticketCode: 'INV-20261025-BD9B86',
+      customerRef: '100458921',
+      origin: 'bill',
+      status: 'In inspection',
+      priority: 'High',
+      assignee: 'Officer Rao',
+      notes: 'Initial meter anomaly',
+      checklist: [
+        { label: 'Confirm customer identity', done: true },
+        { label: 'Check seal integrity', done: false },
+      ],
+      outcome: '',
+      screeningRecordId: null,
+      batchId: null,
+    }
+
+    const screeningTicket = {
+      id: 'aa112233-4455-6677-8899-aabbccddeeff',
+      ticketCode: 'INV-20261025-SC01',
+      customerRef: '100458922',
+      origin: 'screening',
+      status: 'New',
+      priority: 'Normal',
+      screeningRecordId: 'rec-1234',
+      batchId: 'batch-5678',
+    }
+
+    const testList = [existingTicket, screeningTicket]
+
+    describe('findExistingInvestigation', () => {
+      it('detects existing investigation for customer 100458921 with bill origin', () => {
+        const found = findExistingInvestigation(testList, {
+          customerRef: '100458921',
+          origin: 'bill',
+        })
+        assert.ok(found)
+        assert.strictEqual(found.ticketCode, 'INV-20261025-BD9B86')
+        assert.strictEqual(found.id, existingTicket.id)
+      })
+
+      it('matches customerRef case-insensitively and with whitespace trimmed', () => {
+        const found = findExistingInvestigation(testList, {
+          customerRef: '  100458921  ',
+          origin: 'bill',
+        })
+        assert.ok(found)
+        assert.strictEqual(found.ticketCode, 'INV-20261025-BD9B86')
+      })
+
+      it('detects screening ticket when screeningRecordId matches', () => {
+        const found = findExistingInvestigation(testList, {
+          customerRef: '100458922',
+          origin: 'screening',
+          screeningRecordId: 'rec-1234',
+        })
+        assert.ok(found)
+        assert.strictEqual(found.ticketCode, 'INV-20261025-SC01')
+      })
+
+      it('returns null when no matching investigation exists in queue', () => {
+        const found = findExistingInvestigation(testList, {
+          customerRef: '999999999',
+          origin: 'bill',
+        })
+        assert.strictEqual(found, null)
+      })
+
+      it('safely handles empty or non-array list', () => {
+        assert.strictEqual(findExistingInvestigation([], { customerRef: '100458921' }), null)
+        assert.strictEqual(findExistingInvestigation(null, { customerRef: '100458921' }), null)
+        assert.strictEqual(findExistingInvestigation(testList, {}), null)
+      })
+    })
+
+    describe('findInvestigationMatch (Deep Linking & Parameter Selection)', () => {
+      it('finds ticket by exact UUID id', () => {
+        const match = findInvestigationMatch(testList, { id: 'bd9b8600-1111-2222-3333-444455556666' })
+        assert.ok(match)
+        assert.strictEqual(match.ticketCode, 'INV-20261025-BD9B86')
+      })
+
+      it('finds ticket by ticketCode case-insensitively', () => {
+        const match = findInvestigationMatch(testList, { ticketCode: 'inv-20261025-bd9b86' })
+        assert.ok(match)
+        assert.strictEqual(match.id, existingTicket.id)
+      })
+
+      it('finds ticket by customerRef when id and ticketCode are absent', () => {
+        const match = findInvestigationMatch(testList, { customerRef: '100458921' })
+        assert.ok(match)
+        assert.strictEqual(match.ticketCode, 'INV-20261025-BD9B86')
+      })
+
+      it('returns null when identifier does not exist', () => {
+        assert.strictEqual(findInvestigationMatch(testList, { ticketCode: 'INV-DOES-NOT-EXIST' }), null)
+        assert.strictEqual(findInvestigationMatch(testList, {}), null)
+        assert.strictEqual(findInvestigationMatch(null, { id: 'some-id' }), null)
+      })
+    })
+
+    describe('buildInvestigationLink', () => {
+      it('builds link with id and ticketCode query parameters', () => {
+        const link = buildInvestigationLink({
+          id: 'bd9b8600-1111-2222-3333-444455556666',
+          ticketCode: 'INV-20261025-BD9B86',
+        })
+        assert.strictEqual(
+          link,
+          '/app/investigations?id=bd9b8600-1111-2222-3333-444455556666&ticket=INV-20261025-BD9B86',
+        )
+      })
+
+      it('builds link with ticketCode only', () => {
+        const link = buildInvestigationLink({ ticketCode: 'INV-20261025-BD9B86' })
+        assert.strictEqual(link, '/app/investigations?ticket=INV-20261025-BD9B86')
+      })
+
+      it('builds link with customerRef fallback when id/ticket are missing', () => {
+        const link = buildInvestigationLink({ customerRef: '100458921' })
+        assert.strictEqual(link, '/app/investigations?customer=100458921')
+      })
+
+      it('returns default /app/investigations route when no parameters are provided', () => {
+        assert.strictEqual(buildInvestigationLink(), '/app/investigations')
+        assert.strictEqual(buildInvestigationLink({}), '/app/investigations')
+      })
+    })
+
+    describe('State Integrity Under Duplicate Escalation', () => {
+      it('preserves status, priority, assignee, checklist, and notes of existing investigation', () => {
+        const before = JSON.parse(JSON.stringify(existingTicket))
+
+        const duplicate = findExistingInvestigation(testList, {
+          customerRef: '100458921',
+          origin: 'bill',
+        })
+        assert.ok(duplicate)
+
+        assert.strictEqual(existingTicket.status, before.status)
+        assert.strictEqual(existingTicket.priority, before.priority)
+        assert.strictEqual(existingTicket.assignee, before.assignee)
+        assert.strictEqual(existingTicket.notes, before.notes)
+        assert.deepStrictEqual(existingTicket.checklist, before.checklist)
+        assert.strictEqual(existingTicket.outcome, before.outcome)
+      })
     })
   })
 })
