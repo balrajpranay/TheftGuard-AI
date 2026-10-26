@@ -43,7 +43,7 @@ function NavItems({ onNavigate, collapsed, onTooltip, onTooltipLeave, onStartTou
   return (
     <nav
       aria-label="Workspace"
-      className={`flex flex-col gap-1 flex-1 min-h-0 overflow-y-auto overflow-x-hidden ${
+      className={`sidebar-scrollbar flex flex-col gap-1 flex-1 min-h-0 overflow-y-auto overflow-x-hidden ${
         collapsed ? 'items-center w-full' : 'w-full pr-0.5'
       }`}
     >
@@ -276,7 +276,7 @@ export default function AppShell() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-mist lg:flex lg:h-screen lg:overflow-hidden">
+    <div className="relative min-h-screen bg-mist lg:flex lg:h-screen lg:max-h-screen lg:overflow-hidden">
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded focus:bg-gold focus:px-3 focus:py-2 focus:text-ink">
         Skip to main content
       </a>
@@ -284,7 +284,7 @@ export default function AppShell() {
       {/* Desktop rail */}
       <aside
         data-testid="desktop-sidebar"
-        className={`on-dark hidden shrink-0 flex-col bg-ink print:hidden lg:flex lg:h-full lg:max-h-screen transition-[width,padding] duration-200 ease-in-out z-20 ${
+        className={`on-dark hidden shrink-0 flex-col bg-ink print:hidden lg:flex lg:h-screen lg:max-h-screen lg:sticky lg:top-0 lg:overflow-hidden transition-[width,padding] duration-200 ease-in-out z-20 ${
           collapsed ? 'w-16 p-2 items-center' : 'w-64 p-4'
         }`}
       >
@@ -518,7 +518,7 @@ export default function AppShell() {
                 <Icon name="close" />
               </button>
             </div>
-            <div className="flex-1 min-h-0 overflow-y-auto pr-1 my-1">
+            <div className="flex-1 min-h-0 my-1 flex flex-col">
               <NavItems onNavigate={() => setMenu(false)} onStartTour={startTour} />
             </div>
             <div className="mt-auto border-t border-white/15 pt-3 text-xs text-white/70 shrink-0">
@@ -560,7 +560,7 @@ export default function AppShell() {
         </div>
       ) : null}
 
-      <div className="min-w-0 flex-1 lg:h-screen lg:overflow-y-auto flex flex-col">
+      <div className="relative min-w-0 flex-1 lg:h-screen lg:max-h-screen lg:overflow-y-auto flex flex-col bg-mist">
         <div className="border-b border-gold bg-pale print:hidden">
           <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-xs sm:text-sm sm:px-6">
             <DemoBadge>
@@ -589,7 +589,7 @@ export default function AppShell() {
             </span>
           </div>
         </div>
-        <main id="main" className="mx-auto w-full max-w-7xl px-3 py-4 sm:px-6 lg:py-8 min-w-0">
+        <main id="main" className="mx-auto w-full max-w-7xl px-3 py-4 sm:px-6 lg:py-8 min-w-0 flex-1">
           <Outlet />
         </main>
       </div>

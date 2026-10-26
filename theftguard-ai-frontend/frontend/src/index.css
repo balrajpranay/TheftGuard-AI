@@ -4,11 +4,18 @@
 
 @layer base {
   html { scroll-behavior: smooth; }
-  html, body { overflow-x: hidden; }
+  html, body {
+    height: 100%;
+    overflow-x: hidden;
+  }
   body { @apply bg-white font-sans text-ink antialiased; font-variant-numeric: tabular-nums; }
+  #root {
+    min-height: 100%;
+  }
   h1, h2, h3 { @apply font-display; }
   button, [role="button"], a, input, select, textarea { touch-action: manipulation; }
   :focus-visible { outline: 3px solid #0F0F0F; outline-offset: 2px; }
+  .on-dark { color-scheme: dark; }
   .on-dark :focus-visible { outline-color: #F4C430; }
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
@@ -19,4 +26,43 @@
 @media print {
   body { background: #fff; }
   .print-sheet { border: 0 !important; }
+}
+
+/* Dark scrollbar for sidebar navigation (desktop rail and mobile drawer) */
+.sidebar-scrollbar {
+  color-scheme: dark;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+  background-color: transparent;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-track,
+.sidebar-scrollbar::-webkit-scrollbar-track-piece {
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.25);
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  transition: background-color 0.15s ease;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #F4C430;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb:active {
+  background-color: #E0B220;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-corner {
+  background-color: transparent;
+  background: transparent;
 }
