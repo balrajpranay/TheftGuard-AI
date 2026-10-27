@@ -3,6 +3,63 @@ import { CATEGORIES, classify } from './risk.js'
 export const COMPARISON_UNAVAILABLE_MESSAGE =
   'Consumption comparison unavailable: this screening file contains customer-level summary features, not historical and current meter readings.'
 
+export const CUSTOM_REPORT_SECTIONS = [
+  { key: 'executiveSummary', label: 'Executive Summary', title: 'Executive Summary', badge: 'User Commentary' },
+  { key: 'observations', label: 'Observations and Findings', title: 'Observations and Findings', badge: 'User Commentary' },
+  { key: 'recommendations', label: 'Recommendations / Action Taken', title: 'Recommendations / Action Taken', badge: 'User Commentary' },
+  { key: 'notes', label: 'Additional Notes', title: 'Additional Notes', badge: 'User Commentary' },
+]
+
+export const REPORT_EDITOR_FIELDS = [
+  { key: 'department', label: 'Department / Office', type: 'input', hint: 'Optional' },
+  { key: 'executiveSummary', label: 'Executive Summary', type: 'textarea', hint: 'Optional' },
+  { key: 'observations', label: 'Observations and Findings', type: 'textarea', hint: 'Optional' },
+  { key: 'recommendations', label: 'Recommendations / Action Taken', type: 'textarea', hint: 'Optional' },
+  { key: 'notes', label: 'Additional Notes', type: 'textarea', hint: 'Optional' },
+]
+
+/**
+ * Filter and sanitize custom report sections. Empty or whitespace-only sections are omitted.
+ * Preserves the exact sequence: Executive Summary -> Observations -> Recommendations -> Notes.
+ */
+export function getActiveCustomSections(customFields = {}) {
+  if (!customFields || typeof customFields !== 'object') return []
+  return CUSTOM_REPORT_SECTIONS.filter(({ key }) => {
+    const val = customFields[key]
+    return typeof val === 'string' && val.trim().length > 0
+  }).map(({ key, label, title, badge }) => ({
+    key,
+    label,
+    title,
+    badge,
+    content: customFields[key].trim(),
+    rawContent: customFields[key],
+  }))
+}
+
+/**
+ * Checks whether any of the custom commentary or department fields have non-whitespace content.
+ */
+export function hasCustomReportContent(customFields = {}) {
+  if (!customFields || typeof customFields !== 'object') return false
+  return (
+    (typeof customFields.department === 'string' && customFields.department.trim().length > 0) ||
+    getActiveCustomSections(customFields).length > 0
+  )
+}
+
+/**
+ * Format report header meta line including optional department/office.
+ */
+export function formatReportHeaderMeta({ date, period, author, department } = {}) {
+  const parts = []
+  if (date) parts.push(String(date).trim())
+  if (period && String(period).trim()) parts.push(`covering ${String(period).trim()}`)
+  if (author && String(author).trim()) parts.push(`prepared by ${String(author).trim()}`)
+  if (department && String(department).trim()) parts.push(`Department: ${String(department).trim()}`)
+  return parts.join(', ')
+}
+
 /**
  * Determine report context and messaging based on screening results and comparison data.
  */

@@ -1,12 +1,18 @@
 import { useMemo, useState } from 'react'
-import { Button, DemoBadge, Field, inputClass, Notice, PageHeader, Panel } from '../components/ui'
+import { Badge, Button, DemoBadge, Field, inputClass, Notice, PageHeader, Panel, cx } from '../components/ui'
+import Icon from '../components/Icon'
 import { useAppState } from '../state/AppState'
 import { CATEGORIES } from '../lib/risk'
 import { computeComparison, estimatedImpact } from '../lib/compare'
 import { downloadCsv } from '../lib/exportCsv'
 import { MODEL_FACTS } from '../data/modelFacts'
 import { inr, num, pct, score as fmtScore, today } from '../lib/format'
-import { getReportContext, classifyReportCustomers, COMPARISON_UNAVAILABLE_MESSAGE } from '../lib/reports'
+import {
+  getReportContext,
+  classifyReportCustomers,
+  COMPARISON_UNAVAILABLE_MESSAGE,
+  getActiveCustomSections,
+} from '../lib/reports'
 
 const SECTIONS = [
   ['summary', 'Summary'],
@@ -21,6 +27,30 @@ export default function Reports() {
   const [author, setAuthor] = useState('')
   const [period, setPeriod] = useState('')
   const [show, setShow] = useState({ summary: true, flagged: true, comparison: true, method: true })
+
+  // Report Editor state (5 custom fields)
+  const [department, setDepartment] = useState('')
+  const [executiveSummary, setExecutiveSummary] = useState('')
+  const [observations, setObservations] = useState('')
+  const [recommendations, setRecommendations] = useState('')
+  const [notes, setNotes] = useState('')
+  const [editorExpanded, setEditorExpanded] = useState(true)
+
+  const customFields = useMemo(
+    () => ({
+      department,
+      executiveSummary,
+      observations,
+      recommendations,
+      notes,
+    }),
+    [department, executiveSummary, observations, recommendations, notes]
+  )
+
+  const activeCustomSections = useMemo(
+    () => getActiveCustomSections(customFields),
+    [customFields]
+  )
 
   const reportContext = useMemo(
     () => getReportContext({ source, hasScores, uploaded, comparison }),
@@ -97,6 +127,98 @@ export default function Reports() {
               </Field>
             </div>
           </Panel>
+
+          <Panel
+            title="Report Editor"
+            subtitle="Custom commentary & findings"
+            actions={
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setEditorExpanded((prev) => !prev)}
+                className="text-xs h-7 min-h-0 px-2 font-medium"
+                aria-expanded={editorExpanded}
+                aria-controls="report-editor-fields"
+              >
+                <Icon name={editorExpanded ? 'chevLeft' : 'chevRight'} className="h-3.5 w-3.5 rotate-90 sm:rotate-0" />
+                <span>{editorExpanded ? 'Collapse' : 'Expand'}</span>
+              </Button>
+            }
+          >
+            {editorExpanded ? (
+              <div id="report-editor-fields" className="space-y-4">
+                <Field label="Department / Office" htmlFor="r-dept" hint="Optional">
+                  <input
+                    id="r-dept"
+                    value={department}
+                    onChange={(e) => setDepartment(e.target.value)}
+                    placeholder="e.g. Audit Cell / Special Operations"
+                    className={inputClass}
+                  />
+                </Field>
+
+                <Field label="Executive Summary" htmlFor="r-exec-summary" hint="Optional">
+                  <textarea
+                    id="r-exec-summary"
+                    value={executiveSummary}
+                    onChange={(e) => setExecutiveSummary(e.target.value)}
+                    rows={3}
+                    placeholder="High-level operational summary of screening context..."
+                    className={cx(inputClass, 'min-h-[72px] resize-y leading-relaxed')}
+                  />
+                </Field>
+
+                <Field label="Observations and Findings" htmlFor="r-observations" hint="Optional">
+                  <textarea
+                    id="r-observations"
+                    value={observations}
+                    onChange={(e) => setObservations(e.target.value)}
+                    rows={3}
+                    placeholder="Field inspection findings, physical checks, or meter observations..."
+                    className={cx(inputClass, 'min-h-[72px] resize-y leading-relaxed')}
+                  />
+                </Field>
+
+                <Field label="Recommendations / Action Taken" htmlFor="r-recommendations" hint="Optional">
+                  <textarea
+                    id="r-recommendations"
+                    value={recommendations}
+                    onChange={(e) => setRecommendations(e.target.value)}
+                    rows={3}
+                    placeholder="Enforcement action, meter recalibration, or follow-up schedule..."
+                    className={cx(inputClass, 'min-h-[72px] resize-y leading-relaxed')}
+                  />
+                </Field>
+
+                <Field label="Additional Notes" htmlFor="r-notes" hint="Optional">
+                  <textarea
+                    id="r-notes"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    rows={2}
+                    placeholder="Reference case numbers, caveats, or secondary disclosures..."
+                    className={cx(inputClass, 'min-h-[60px] resize-y leading-relaxed')}
+                  />
+                </Field>
+              </div>
+            ) : (
+              <div className="py-1 text-xs text-muted flex items-center justify-between">
+                <span>
+                  {activeCustomSections.length > 0 || department.trim()
+                    ? `${activeCustomSections.length + (department.trim() ? 1 : 0)} custom field(s) populated`
+                    : 'Editor collapsed'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setEditorExpanded(true)}
+                  className="font-medium text-ink underline hover:text-slate-600"
+                >
+                  Expand editor
+                </button>
+              </div>
+            )}
+          </Panel>
+
           <Panel title="Sections">
             <ul className="space-y-1.5">
               {SECTIONS.map(([k, label]) => (
@@ -137,12 +259,35 @@ export default function Reports() {
           )}
 
           <header className="border-b border-ink pb-4">
-            <p className="text-sm text-muted">TheftGuard AI</p>
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <p className="text-sm text-muted">TheftGuard AI</p>
+              {department.trim() ? (
+                <span
+                  data-testid="preview-department-badge"
+                  className="text-xs font-semibold text-slate-700 uppercase tracking-wider bg-slate-100 border border-slate-200 px-2 py-0.5 rounded"
+                >
+                  {department.trim()}
+                </span>
+              ) : null}
+            </div>
             <h2 className="mt-1 text-3xl font-bold tracking-tight text-ink">{title || 'Untitled report'}</h2>
             <p className="mt-2 text-sm text-muted">
-              {today()}{period ? `, covering ${period}` : ''}{author ? `, prepared by ${author}` : ''}
+              {today()}{period ? `, covering ${period}` : ''}{author ? `, prepared by ${author}` : ''}{department.trim() ? ` • Department: ${department.trim()}` : ''}
             </p>
           </header>
+
+          {/* Custom Section 1: Executive Summary */}
+          {executiveSummary.trim() ? (
+            <section className="mt-6" data-testid="section-executive-summary">
+              <div className="flex items-center gap-2">
+                <h3 className="text-xl font-semibold text-ink">Executive Summary</h3>
+                <Badge tone="grey" className="text-[11px] font-medium">User Commentary</Badge>
+              </div>
+              <div className="mt-2 text-sm leading-relaxed text-ink/90 whitespace-pre-wrap break-words">
+                {executiveSummary}
+              </div>
+            </section>
+          ) : null}
 
           {show.summary ? (
             <section className="mt-6">
@@ -155,6 +300,19 @@ export default function Reports() {
                   : `${counts.review} are in the Review Recommended band (Model Score ${thresholds.review.toFixed(2)} or higher), ${counts.elevated} are Elevated (${thresholds.elevated.toFixed(2)} to below ${thresholds.review.toFixed(2)}) and ${counts.none} have no flag.${counts.unscored > 0 ? ` (${counts.unscored} not scored or failed validation).` : ''}`}
               </p>
               <p className="mt-2 text-sm leading-relaxed text-ink/90">A Model Score ranks records for attention. It is not a probability, and a flag is not proof of electricity theft.</p>
+            </section>
+          ) : null}
+
+          {/* Custom Section 2: Observations and Findings */}
+          {observations.trim() ? (
+            <section className="mt-6" data-testid="section-observations">
+              <div className="flex items-center gap-2">
+                <h3 className="text-xl font-semibold text-ink">Observations and Findings</h3>
+                <Badge tone="grey" className="text-[11px] font-medium">User Commentary</Badge>
+              </div>
+              <div className="mt-2 text-sm leading-relaxed text-ink/90 whitespace-pre-wrap break-words">
+                {observations}
+              </div>
             </section>
           ) : null}
 
@@ -239,6 +397,32 @@ export default function Reports() {
                   {COMPARISON_UNAVAILABLE_MESSAGE}
                 </p>
               )}
+            </section>
+          ) : null}
+
+          {/* Custom Section 3: Recommendations / Action Taken */}
+          {recommendations.trim() ? (
+            <section className="mt-6" data-testid="section-recommendations">
+              <div className="flex items-center gap-2">
+                <h3 className="text-xl font-semibold text-ink">Recommendations / Action Taken</h3>
+                <Badge tone="grey" className="text-[11px] font-medium">User Commentary</Badge>
+              </div>
+              <div className="mt-2 text-sm leading-relaxed text-ink/90 whitespace-pre-wrap break-words">
+                {recommendations}
+              </div>
+            </section>
+          ) : null}
+
+          {/* Custom Section 4: Additional Notes */}
+          {notes.trim() ? (
+            <section className="mt-6" data-testid="section-additional-notes">
+              <div className="flex items-center gap-2">
+                <h3 className="text-xl font-semibold text-ink">Additional Notes</h3>
+                <Badge tone="grey" className="text-[11px] font-medium">User Commentary</Badge>
+              </div>
+              <div className="mt-2 text-sm leading-relaxed text-ink/90 whitespace-pre-wrap break-words">
+                {notes}
+              </div>
             </section>
           ) : null}
 
