@@ -3,6 +3,11 @@ import { CATEGORIES, classify } from './risk.js'
 export const COMPARISON_UNAVAILABLE_MESSAGE =
   'Consumption comparison unavailable: this screening file contains customer-level summary features, not historical and current meter readings.'
 
+export const REPORT_TYPES = [
+  { id: 'department', label: 'Department Investigation Report', shortLabel: 'Department Investigation' },
+  { id: 'customer', label: 'Customer Electricity Report', shortLabel: 'Customer Report' },
+]
+
 export const CUSTOM_REPORT_SECTIONS = [
   { key: 'executiveSummary', label: 'Executive Summary', title: 'Executive Summary', badge: 'User Commentary' },
   { key: 'observations', label: 'Observations and Findings', title: 'Observations and Findings', badge: 'User Commentary' },
@@ -16,6 +21,15 @@ export const REPORT_EDITOR_FIELDS = [
   { key: 'observations', label: 'Observations and Findings', type: 'textarea', hint: 'Optional' },
   { key: 'recommendations', label: 'Recommendations / Action Taken', type: 'textarea', hint: 'Optional' },
   { key: 'notes', label: 'Additional Notes', type: 'textarea', hint: 'Optional' },
+]
+
+export const CUSTOMER_COMPLAINT_CATEGORIES = [
+  'Unexpected high bill',
+  'Incorrect meter reading',
+  'Suspected meter fault',
+  'Consumption discrepancy',
+  'Billing dispute',
+  'Other',
 ]
 
 /**
@@ -58,6 +72,94 @@ export function formatReportHeaderMeta({ date, period, author, department } = {}
   if (author && String(author).trim()) parts.push(`prepared by ${String(author).trim()}`)
   if (department && String(department).trim()) parts.push(`Department: ${String(department).trim()}`)
   return parts.join(', ')
+}
+
+/**
+ * Computes comparative metrics between previous and current bills/meter readings if valid numbers are provided.
+ */
+export function computeCustomerBillMetrics({
+  prevAmount,
+  currAmount,
+  prevReading,
+  currReading,
+  billedUnits,
+} = {}) {
+  const parseNum = (v) => {
+    if (v === null || v === undefined || v === '') return null
+    const cleaned = String(v).replace(/[^0-9.-]/g, '')
+    if (cleaned === '' || cleaned === '-' || cleaned === '.') return null
+    const n = Number(cleaned)
+    return Number.isFinite(n) ? n : null
+  }
+
+  const pAmt = parseNum(prevAmount)
+  const cAmt = parseNum(currAmount)
+  const pRead = parseNum(prevReading)
+  const cRead = parseNum(currReading)
+  const bUnits = parseNum(billedUnits)
+
+  let amountDiff = null
+  let amountPercentChange = null
+  if (pAmt !== null && cAmt !== null) {
+    amountDiff = cAmt - pAmt
+    if (pAmt > 0) {
+      amountPercentChange = (amountDiff / pAmt) * 100
+    }
+  }
+
+  let readingUnits = null
+  if (pRead !== null && cRead !== null && cRead >= pRead) {
+    readingUnits = cRead - pRead
+  }
+
+  let unitsDifference = null
+  if (readingUnits !== null && bUnits !== null) {
+    unitsDifference = bUnits - readingUnits
+  }
+
+  const hasAnyFinancialData = pAmt !== null || cAmt !== null
+  const hasAnyMeterData = pRead !== null || cRead !== null || bUnits !== null
+  const hasAmountComparison = amountDiff !== null
+  const hasMeterComparison = readingUnits !== null
+
+  return {
+    prevAmount: pAmt,
+    currAmount: cAmt,
+    amountDiff,
+    amountPercentChange,
+    prevReading: pRead,
+    currReading: cRead,
+    readingUnits,
+    billedUnits: bUnits,
+    unitsDifference,
+    hasAnyFinancialData,
+    hasAnyMeterData,
+    hasAmountComparison,
+    hasMeterComparison,
+    hasAnyData: hasAnyFinancialData || hasAnyMeterData,
+  }
+}
+
+/**
+ * Check whether any customer report fields have non-whitespace content.
+ */
+export function hasCustomerReportContent(fields = {}) {
+  if (!fields || typeof fields !== 'object') return false
+  const keys = [
+    'customerName',
+    'connectionRef',
+    'billingPeriod',
+    'prevBillAmount',
+    'currBillAmount',
+    'prevReading',
+    'currReading',
+    'billedUnits',
+    'issueDescription',
+    'requestedResolution',
+    'evidenceReferences',
+    'customerNotes',
+  ]
+  return keys.some((k) => typeof fields[k] === 'string' && fields[k].trim().length > 0)
 }
 
 /**

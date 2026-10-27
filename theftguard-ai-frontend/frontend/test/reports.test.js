@@ -9,6 +9,10 @@ import {
   getActiveCustomSections,
   hasCustomReportContent,
   formatReportHeaderMeta,
+  REPORT_TYPES,
+  CUSTOMER_COMPLAINT_CATEGORIES,
+  computeCustomerBillMetrics,
+  hasCustomerReportContent as hasCustomerContent,
 } from '../src/lib/reports.js'
 import { DEFAULT_THRESHOLDS } from '../src/lib/risk.js'
 
@@ -261,5 +265,126 @@ describe('Report Editor — Custom Commentary Sections & Live Preview Logic', ()
     assert.equal(hasCustomReportContent({ recommendations: 'Actions' }), true)
     assert.equal(hasCustomReportContent({ notes: 'Note' }), true)
     assert.equal(hasCustomReportContent({ department: '   ', notes: '  ' }), false)
+  })
+})
+
+describe('Customer Electricity Report — Models, Calculations & Validation', () => {
+  it('defines both report types (department and customer)', () => {
+    assert.equal(REPORT_TYPES.length, 2)
+    const ids = REPORT_TYPES.map((t) => t.id)
+    assert.deepEqual(ids, ['department', 'customer'])
+  })
+
+  it('defines all 6 standard customer complaint categories', () => {
+    assert.equal(CUSTOMER_COMPLAINT_CATEGORIES.length, 6)
+    assert.deepEqual(CUSTOMER_COMPLAINT_CATEGORIES, [
+      'Unexpected high bill',
+      'Incorrect meter reading',
+      'Suspected meter fault',
+      'Consumption discrepancy',
+      'Billing dispute',
+      'Other',
+    ])
+  })
+
+  it('computes customer bill amount variance and percent change accurately', () => {
+    const res = computeCustomerBillMetrics({
+      prevAmount: 2000,
+      currAmount: 3500,
+    })
+
+    assert.equal(res.prevAmount, 2000)
+    assert.equal(res.currAmount, 3500)
+    assert.equal(res.amountDiff, 1500)
+    assert.equal(res.amountPercentChange, 75)
+    assert.equal(res.hasAmountComparison, true)
+    assert.equal(res.hasAnyFinancialData, true)
+    assert.equal(res.hasAnyData, true)
+  })
+
+  it('computes meter reading consumption increment accurately', () => {
+    const res = computeCustomerBillMetrics({
+      prevReading: 10200,
+      currReading: 10550,
+    })
+
+    assert.equal(res.prevReading, 10200)
+    assert.equal(res.currReading, 10550)
+    assert.equal(res.readingUnits, 350)
+    assert.equal(res.hasMeterComparison, true)
+    assert.equal(res.hasAnyMeterData, true)
+    assert.equal(res.hasAnyData, true)
+  })
+
+  it('detects and calculates unit discrepancy when billed units exceed meter increment', () => {
+    const res = computeCustomerBillMetrics({
+      prevReading: 1000,
+      currReading: 1200, // 200 units increment
+      billedUnits: 280,  // Utility charged 280 units
+    })
+
+    assert.equal(res.readingUnits, 200)
+    assert.equal(res.billedUnits, 280)
+    assert.equal(res.unitsDifference, 80) // 280 - 200 = 80 units excess
+  })
+
+  it('handles exact match between billed units and meter reading increment', () => {
+    const res = computeCustomerBillMetrics({
+      prevReading: 5000,
+      currReading: 5400,
+      billedUnits: 400,
+    })
+
+    assert.equal(res.readingUnits, 400)
+    assert.equal(res.billedUnits, 400)
+    assert.equal(res.unitsDifference, 0)
+  })
+
+  it('handles partial numerical inputs gracefully without errors', () => {
+    const res = computeCustomerBillMetrics({
+      prevAmount: '',
+      currAmount: 1500,
+      prevReading: null,
+      currReading: undefined,
+      billedUnits: 120,
+    })
+
+    assert.equal(res.prevAmount, null)
+    assert.equal(res.currAmount, 1500)
+    assert.equal(res.amountDiff, null)
+    assert.equal(res.amountPercentChange, null)
+    assert.equal(res.readingUnits, null)
+    assert.equal(res.billedUnits, 120)
+    assert.equal(res.unitsDifference, null)
+    assert.equal(res.hasAmountComparison, false)
+    assert.equal(res.hasMeterComparison, false)
+    assert.equal(res.hasAnyFinancialData, true)
+    assert.equal(res.hasAnyMeterData, true)
+    assert.equal(res.hasAnyData, true)
+  })
+
+  it('handles invalid strings and currency symbols cleanly in numeric inputs', () => {
+    const res = computeCustomerBillMetrics({
+      prevAmount: '₹ 2,400.50',
+      currAmount: '₹ 4,801.00',
+      prevReading: '12,000 kWh',
+      currReading: '12,500 kWh',
+    })
+
+    assert.equal(res.prevAmount, 2400.5)
+    assert.equal(res.currAmount, 4801)
+    assert.equal(res.amountDiff, 2400.5)
+    assert.equal(res.prevReading, 12000)
+    assert.equal(res.currReading, 12500)
+    assert.equal(res.readingUnits, 500)
+  })
+
+  it('hasCustomerReportContent accurately validates populated vs empty customer fields', () => {
+    assert.equal(hasCustomerContent({ customerName: 'Ramesh' }), true)
+    assert.equal(hasCustomerContent({ connectionRef: 'USC-10293' }), true)
+    assert.equal(hasCustomerContent({ prevBillAmount: '1200' }), true)
+    assert.equal(hasCustomerContent({ issueDescription: 'Sudden surge' }), true)
+    assert.equal(hasCustomerContent({}), false)
+    assert.equal(hasCustomerContent({ customerName: '   ', connectionRef: '' }), false)
   })
 })

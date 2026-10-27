@@ -160,6 +160,106 @@ test.describe('TheftGuard AI — Report Editor & Custom Commentary Sections', ()
     await expect(contentDiv).toBeVisible()
     await expect(contentDiv).toHaveText(multiLine)
   })
+
+  test('7. Renders report type selector and switches between Department and Customer Report', async ({ page }) => {
+    const deptBtn = page.locator('[data-testid="report-type-department"]')
+    const custBtn = page.locator('[data-testid="report-type-customer"]')
+
+    await expect(deptBtn).toBeVisible()
+    await expect(custBtn).toBeVisible()
+    await expect(deptBtn).toHaveAttribute('aria-checked', 'true')
+
+    // Initial preview is Department report
+    const preview = page.locator('article[aria-label="Report preview"]')
+    await expect(preview.getByRole('heading', { level: 2 })).toHaveText('Screening and consumption review')
+
+    // Switch to Customer Report
+    await custBtn.click()
+    await expect(custBtn).toHaveAttribute('aria-checked', 'true')
+    await expect(deptBtn).toHaveAttribute('aria-checked', 'false')
+
+    // Customer builder panels should be visible
+    await expect(page.locator('#r-cust-name')).toBeVisible()
+    await expect(page.locator('#r-cust-conn')).toBeVisible()
+    await expect(page.locator('#r-cust-category')).toBeVisible()
+    await expect(page.locator('#r-cust-period')).toBeVisible()
+
+    // Customer preview heading should be visible
+    await expect(preview.getByRole('heading', { level: 2 })).toHaveText('Customer Electricity Report')
+
+    // Switch back to Department Report
+    await deptBtn.click()
+    await expect(deptBtn).toHaveAttribute('aria-checked', 'true')
+    await expect(preview.getByRole('heading', { level: 2 })).toHaveText('Screening and consumption review')
+  })
+
+  test('8. Populates Customer Electricity Report with live preview, calculated variance, and statement badges', async ({ page }) => {
+    // Switch to Customer Report
+    await page.locator('[data-testid="report-type-customer"]').click()
+    const preview = page.locator('article[aria-label="Report preview"]')
+
+    // Fill consumer details
+    await page.locator('#r-cust-name').fill('Smt. Ananya Sen')
+    await page.locator('#r-cust-conn').fill('USC-4091882 / Meter #M-9021')
+    await page.locator('#r-cust-category').selectOption('Unexpected high bill')
+    await page.locator('#r-cust-period').fill('September 2026')
+
+    // Verify identification card
+    await expect(preview.locator('[data-testid="preview-customer-name"]')).toHaveText('Smt. Ananya Sen')
+    await expect(preview.locator('[data-testid="preview-connection-ref"]')).toHaveText('USC-4091882 / Meter #M-9021')
+    await expect(preview.locator('[data-testid="preview-complaint-badge"]')).toHaveText('Unexpected high bill')
+
+    // Fill comparative billing and meter readings
+    await page.locator('#r-cust-prev-amt').fill('2000')
+    await page.locator('#r-cust-curr-amt').fill('3500')
+    await page.locator('#r-cust-prev-read').fill('1000')
+    await page.locator('#r-cust-curr-read').fill('1200')
+    await page.locator('#r-cust-billed-units').fill('280')
+
+    // Verify comparative metrics
+    await expect(preview.locator('[data-testid="preview-amount-diff"]')).toContainText('+₹1,500 (+75.0%)')
+    await expect(preview.locator('[data-testid="preview-reading-units"]')).toHaveText('200 kWh')
+    await expect(preview.locator('[data-testid="preview-billed-units"]')).toHaveText('280 kWh')
+    await expect(preview.locator('[data-testid="preview-units-discrepancy"]')).toContainText('Billed units exceed the meter reading increment by +80 kWh')
+
+    // Fill customer statements
+    await page.locator('#r-cust-issue').fill('Unusually high bill received for September despite house being closed for 2 weeks.')
+    await page.locator('#r-cust-resolution').fill('Request site inspection, meter accuracy testing, and bill recalculation.')
+    await page.locator('#r-cust-evidence').fill('Attached electricity bills for July, August, and September 2026.')
+    await page.locator('#r-cust-notes').fill('Consumer hereby confirms connected load remains 2 kW domestic.')
+
+    // Verify custom statements rendered with badges
+    const issueSection = preview.locator('[data-testid="section-customer-issue"]')
+    await expect(issueSection).toBeVisible()
+    await expect(issueSection.getByText('Customer Statement')).toBeVisible()
+    await expect(issueSection).toContainText('Unusually high bill received for September')
+
+    const resSection = preview.locator('[data-testid="section-customer-resolution"]')
+    await expect(resSection).toBeVisible()
+    await expect(resSection.getByText('Customer Statement')).toBeVisible()
+    await expect(resSection).toContainText('Request site inspection')
+
+    const evidSection = preview.locator('[data-testid="section-customer-evidence"]')
+    await expect(evidSection).toBeVisible()
+    await expect(evidSection.getByText('Customer Statement')).toBeVisible()
+    await expect(evidSection).toContainText('Attached electricity bills')
+
+    const notesSection = preview.locator('[data-testid="section-customer-notes"]')
+    await expect(notesSection).toBeVisible()
+    await expect(notesSection.getByText('Customer Statement')).toBeVisible()
+    await expect(notesSection).toContainText('Consumer hereby confirms connected load')
+  })
+
+  test('9. Displays required neutral grievance disclaimer on Customer Electricity Report', async ({ page }) => {
+    await page.locator('[data-testid="report-type-customer"]').click()
+    const preview = page.locator('article[aria-label="Report preview"]')
+
+    const disclaimer = preview.locator('[data-testid="customer-report-disclaimer"]')
+    await expect(disclaimer).toBeVisible()
+    await expect(disclaimer).toContainText('Official Notice & Disclaimer:')
+    await expect(disclaimer).toContainText('documents a billing or meter grievance and does not establish that a billing error or electricity theft occurred')
+    await expect(disclaimer).toContainText('Official verification and on-site inspection by authorized utility personnel is required')
+  })
 })
 
 function assertOrder(array, first, second) {
